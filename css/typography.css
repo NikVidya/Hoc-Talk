@@ -1,0 +1,77 @@
+/*
+    Typography based styles
+*/
+body {
+    font-family: "arial", sans-serif;
+	font-weight: normal;
+	font-style: normal;	
+    font-size: 0.8em;
+    color:#aaa;
+}
+
+p.lead {
+    font-family: "arial", sans-serif;
+    font-weight: bold;
+    font-size: 1.0em;
+}
+
+.muted {
+    font-weight: lighter;
+}
+
+p {
+	margin: 1.1rem;
+    line-height: 1.5em;
+}
+ul, ol, li {
+	margin: 0.7rem;
+}
+
+h1,
+h2,
+h3 {
+    font-family: "dejavu";
+    text-decoration:none;
+}
+
+h1 {
+    font-size: 2.4em;
+    margin-bottom:10px;
+}
+h2 {
+    font-size: 1.8em;
+    margin-bottom:10px;
+}
+h3 {
+    font-size: 1.5em;
+    margin-bottom:10px;
+}
+h4 {
+    font-size: 1.1em;
+    margin-bottom:5px;
+}
+h5 {
+    font-size: 1em;
+    margin-bottom:5px;
+}
+
+.code,
+code {
+    font-family: 'dejavu';
+}
+a {
+    color: aqua;
+}
+.fas.fa-down {
+    font-size: 2rem;
+}
+.fas.fa-up {
+    font-size: 2rem;
+}
+a:hover,
+a:hover {
+    color: #f20;
+}
+a:active {
+    color: #710;
+}

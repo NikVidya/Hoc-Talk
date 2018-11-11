@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Hoc Talk</title>
+		
+		<meta name="author" content="Nicholas Mason">
+		<meta name="description" content="Nicholas Mason is a software developer based in British Columbia, Canada. He graduated from Simon Fraser University with a Bachelor of Science in Interactive Arts & Technology in 2018 and has worked in Android development">
+		<meta name="keywords" content="Nicholas, Mason, Nick, Developer, Software, Engineer, Java, C#, Portfolio, HTML, CSS, Scala">
+		<meta charset="utf-8">
+		<meta name=viewport content="width=device-width, initial-scale=1">
+
+		<!-- Style Sheets -->
+		<!-- Reset -->
+		<link href="css/normalize.css" rel="stylesheet">
+		<!-- Fonts -->
+		<link href="css/fonts.css" rel="stylesheet">
+		<!-- Overall -->
+		<link href="css/main.css" rel="stylesheet">
+		<!-- Typography -->
+		<link href="css/typography.css" rel="stylesheet">
+		<!-- Whole Elements -->
+		<link href="css/elements.css" rel="stylesheet">
+		<!-- font awesome -->
+		<link href="fonts/fontawesome-free-5.3.1-web/css/all.css" rel="stylesheet">
+		<!-- /Style Sheets -->
+	</head>
+
+	<body>
+		<header>
+			<div class="left-header">
+				<h1><a href="index.html">Hoc Talk</a></h1>
+			</div><div class="right-header">
+				<nav>
+					<a href="index.html" class="current-page"><i class="fas fa-home"></i> Home</a>
+					<a href="about.html"><i class="fas fa-user"></i> About</a>
+				</nav>
+			</div>
+		</header>
+		
+		<div class="content">
+			<section class="content-row">
+					<div class="box">
+						<div id="videos" class="video-container">
+							<h2>local video:</h2>
+							<video id="localVideo" autoplay muted></video>
+							<h2>remote video:</h2>
+							<video class="remoteVideo" autoplay></video>
+						</div>
+
+							<script src="/socket.io/socket.io.js"></script>
+							<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+							<script src="js/main.js"></script>
+					</div>
+			</section>
+		<footer>
+			<div class="left-footer">
+				<p class="lead">&#169; Nicholas Mason</p>
+				<p><a href="mailto:n.mason1@outlook.com">n.mason1@outlook.com</a></p>
+				<p><a href="https://vdm.fun/~nick/">https://vdm.fun/~nick/</a></p>
+			</div><div class="right-footer">
+				<nav>
+					<a href="https://github.com/nikvidya/portfolio-site">Site source code <i class="fab fa-github-square"></i></a>
+					<br><a href="guide.html">Style Guide <i class="fas fa-pen-square"></i></a>
+				</nav>
+			</div>
+		</footer>
+	</body>
+</html>
