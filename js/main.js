@@ -1,11 +1,13 @@
 'use strict';
 
+//#region Definitions
+
 var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 var localStream;
 var pc;
-var remoteStream;
+var remoteStreams = new Array();
 var turnReady;
 
 var pcConfig = {
@@ -20,15 +22,28 @@ var sdpConstraints = {
   offerToReceiveVideo: true
 };
 
-/////////////////////////////////////////////
-
 var socket = io.connect();
 
-window.room = prompt("Enter room name:");
+var localVideo = document.querySelector('#localVideo');
+var remoteVideos = new Array(); //defined dynamically as streams are added
+
+var constraints = {
+  audio: false,
+  video: true
+};
+
+//#endregion
+
+//#region Socket
+
+window.room = window.location.hash.substring(1);
+if (!room) {
+  window.room = window.location.hash = prompt("Enter room name:");
+}
 
 if (room !== '') {
   socket.emit('create or join', room);
-  console.log('Attempted to create or  join room', room);
+  console.log('Attempted to create or join room', room);
 }
 
 socket.on('created', function(room) {
@@ -42,7 +57,9 @@ socket.on('full', function(room) {
 
 socket.on('join', function (room){
   console.log('Another peer made a request to join room ' + room);
-  console.log('This peer is the initiator of room ' + room + '!');
+  if (isInitiator) {
+    console.log('This peer is the initiator of room ' + room + '!');
+  }
   isChannelReady = true;
 });
 
@@ -55,7 +72,9 @@ socket.on('log', function(array) {
   console.log.apply(console, array);
 });
 
-////////////////////////////////////////////////
+//#endregion
+
+//#region Messages
 
 function sendMessage(message) {
   console.log('Client sending message: ', message);
@@ -86,11 +105,11 @@ socket.on('message', function(message) {
   }
 });
 
-////////////////////////////////////////////////////
+//#endregion
 
-var localVideo = document.querySelector('#localVideo');
-var remoteVideo; //defined dynamically as streams are added
+//#region Main
 
+//get local mediastream
 navigator.mediaDevices.getUserMedia({
   audio: false,
   video: true
@@ -110,9 +129,6 @@ function gotStream(stream) {
   }
 }
 
-var constraints = {
-  video: true
-};
 
 console.log('Getting user media with constraints', constraints);
 
@@ -140,7 +156,9 @@ window.onbeforeunload = function() {
   sendMessage('bye');
 };
 
-/////////////////////////////////////////////////////////
+//#endregion
+
+//#region Handlers/Callbacks
 
 function createPeerConnection() {
   try {
@@ -228,12 +246,13 @@ function requestTurn(turnURL) {
 
 function handleRemoteStreamAdded(event) {
   console.log('Remote stream added.');
-  remoteStream = event.stream;
+  remoteStreams.push(event.stream);
   var newVideoElement = document.createElement('video');
-  newVideoElement.className = 'remoteVideo';
+  newVideoElement.autoplay = true;
+  newVideoElement.className = "remoteVideo";
   document.getElementById('videos').appendChild(newVideoElement);
-  remoteVideo = document.querySelector('.remoteVideo')
-  remoteVideo.srcObject = remoteStream;
+  remoteVideos.push(newVideoElement);
+  remoteVideos[remoteVideos.length-1].srcObject = remoteStreams[remoteStreams.length-1];
 }
 
 function handleRemoteStreamRemoved(event) {
@@ -257,3 +276,4 @@ function stop() {
   pc.close();
   pc = null;
 }
+//#endregion
