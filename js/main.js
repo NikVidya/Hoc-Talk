@@ -6,8 +6,7 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 var localStream;
-var pc;
-var remoteStreams = new Array();
+var peerConnections;
 var turnReady;
 
 var pcConfig = {
@@ -25,6 +24,7 @@ var sdpConstraints = {
 var socket = io.connect();
 
 var localVideo = document.querySelector('#localVideo');
+var remoteStreams = new Array();
 var remoteVideos = new Array(); //defined dynamically as streams are added
 
 var constraints = {
@@ -76,30 +76,32 @@ socket.on('log', function(array) {
 
 //#region Messages
 
+// This client sends a message, attaching its ID
 function sendMessage(message) {
   console.log('Client sending message: ', message);
-  socket.emit('message', message);
+  socket.emit('message', message, socket.id);
 }
 
 // This client receives a message
-socket.on('message', function(message) {
+socket.on('message', (message, senderId) => {
   console.log('Client received message:', message);
+  console.log('message from: ' + senderId);
   if (message === 'got user media') {
-    maybeStart();
+    maybeStart(senderId);
   } else if (message.type === 'offer') {
     if (!isInitiator && !isStarted) {
-      maybeStart();
+      maybeStart(senderId);
     }
-    pc.setRemoteDescription(new RTCSessionDescription(message));
-    doAnswer();
+    peerConnections[socket.id].setRemoteDescription(new RTCSessionDescription(message));
+    doAnswer(senderId);
   } else if (message.type === 'answer' && isStarted) {
-    pc.setRemoteDescription(new RTCSessionDescription(message));
+    peerConnections[socket.id].setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate' && isStarted) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate
     });
-    pc.addIceCandidate(candidate);
+    peerConnections[socket.id].addIceCandidate(candidate);
   } else if (message === 'bye' && isStarted) {
     handleRemoteHangup();
   }
@@ -125,10 +127,9 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   sendMessage('got user media');
   if (isInitiator) {
-    maybeStart();
+    maybeStart(session.id);
   }
 }
-
 
 console.log('Getting user media with constraints', constraints);
 
@@ -138,16 +139,16 @@ if (location.hostname !== 'localhost') {
   );
 }
 
-function maybeStart() {
-  console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady);
+function maybeStart(targetId) {
+  console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady, targetId);
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
-    console.log('>>>>>> creating peer connection');
-    createPeerConnection();
-    pc.addStream(localStream);
+    console.log('>>>>>> creating peer connection with client ' + targetId);
+    createPeerConnection(targetId);
+    peerConnections[targetId].addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
     if (isInitiator) {
-      doCall();
+      doCall(targetId);
     }
   }
 }
@@ -160,12 +161,12 @@ window.onbeforeunload = function() {
 
 //#region Handlers/Callbacks
 
-function createPeerConnection() {
+function createPeerConnection(targetId) {
   try {
-    pc = new RTCPeerConnection(null);
-    pc.onicecandidate = handleIceCandidate;
-    pc.onaddstream = handleRemoteStreamAdded;
-    pc.onremovestream = handleRemoteStreamRemoved;
+    peerConnections[targetId] = new RTCPeerConnection();
+    peerConnections[targetId].onicecandidate = handleIceCandidate;
+    peerConnections[targetId].onaddstream = handleRemoteStreamAdded;
+    peerConnections[targetId].onremovestream = handleRemoteStreamRemoved;
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
@@ -192,21 +193,38 @@ function handleCreateOfferError(event) {
   console.log('createOffer() error: ', event);
 }
 
-function doCall() {
+function doCall(targetId) {
   console.log('Sending offer to peer');
-  pc.createOffer(setLocalAndSendMessage, handleCreateOfferError);
+  // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
+  peerConnections[targetId].createOffer().then(function(offer){
+    console.log('setLocalAndSendMessage sending message', offer);
+    return peerConnections[targetId].setLocalDescription(offer);
+  })
+  .then(function(offer){
+    sendMessage(offer);
+  })
+  .catch(handleCreateOfferError);
 }
 
-function doAnswer() {
+function doAnswer(targetId) {
   console.log('Sending answer to peer.');
-  pc.createAnswer().then(
-    setLocalAndSendMessage,
-    onCreateSessionDescriptionError
-  );
+  // peerConnections[targetId].createAnswer().then(
+  //   setLocalAndSendMessage(targetId),
+  //   onCreateSessionDescriptionError
+  // );
+  peerConnections[targetId].createAnswer().then(function(answer) {
+    console.log('setLocalAndSendMessage sending message', answer);
+    return peerConnections[targetId].setLocalDescription(answer);
+  })
+  .then(function(answer){
+    sendMessage(answer);
+  })
+  .catch(onCreateSessionDescriptionError);
 }
 
-function setLocalAndSendMessage(sessionDescription) {
-  pc.setLocalDescription(sessionDescription);
+//TODO might not work with targetid as an argument when called in createOffer() and createAnswer(), find another solution if broken
+function setLocalAndSendMessage(sessionDescription, targetId) {
+  peerConnections[targetId].setLocalDescription(sessionDescription);
   console.log('setLocalAndSendMessage sending message', sessionDescription);
   sendMessage(sessionDescription);
 }
@@ -273,7 +291,7 @@ function handleRemoteHangup() {
 
 function stop() {
   isStarted = false;
-  pc.close();
-  pc = null;
+  peerConnections.foreach(close());
+  peerConnections = null;
 }
 //#endregion

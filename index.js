@@ -20,9 +20,10 @@ io.sockets.on('connection', function(socket) {
         socket.emit('log', array);
     }
 
-    socket.on('message', function(message) {
-        log('Client said: ', message);
-        socket.emit('message', message);
+    socket.on('message', (message, senderId) => {
+        log('Client ' + senderId + ' said: ', message);
+        //sends to all clients, limit to room in future
+        socket.broadcast.emit('message', message, senderId);
     });
 
     socket.on('create or join', function(room) {
