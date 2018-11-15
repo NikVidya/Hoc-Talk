@@ -6,7 +6,7 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 var localStream;
-var peerConnections;
+var peerConnections = new Array();
 var turnReady;
 
 var pcConfig = {
@@ -78,30 +78,31 @@ socket.on('log', function(array) {
 
 // This client sends a message, attaching its ID
 function sendMessage(message) {
-  console.log('Client sending message: ', message);
+  console.log('Client ' + socket.id + ' sending message: ', message);
   socket.emit('message', message, socket.id);
 }
 
 // This client receives a message
+// TODO not receiving senderId from server messages?
 socket.on('message', (message, senderId) => {
   console.log('Client received message:', message);
   console.log('message from: ' + senderId);
   if (message === 'got user media') {
-    maybeStart(senderId);
+    start(senderId);
   } else if (message.type === 'offer') {
     if (!isInitiator && !isStarted) {
-      maybeStart(senderId);
+      start(senderId);
     }
-    peerConnections[socket.id].setRemoteDescription(new RTCSessionDescription(message));
-    doAnswer(senderId);
+    peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+    handleCreateAnswer(senderId);
   } else if (message.type === 'answer' && isStarted) {
-    peerConnections[socket.id].setRemoteDescription(new RTCSessionDescription(message));
+    peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
   } else if (message.type === 'candidate' && isStarted) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate
     });
-    peerConnections[socket.id].addIceCandidate(candidate);
+    peerConnections[senderId].addIceCandidate(candidate);
   } else if (message === 'bye' && isStarted) {
     handleRemoteHangup();
   }
@@ -127,28 +128,28 @@ function gotStream(stream) {
   localVideo.srcObject = stream;
   sendMessage('got user media');
   if (isInitiator) {
-    maybeStart(session.id);
+    start(session.id);
   }
 }
 
 console.log('Getting user media with constraints', constraints);
 
 if (location.hostname !== 'localhost') {
-  requestTurn(
+  handleRequestTurn(
     'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
   );
 }
 
-function maybeStart(targetId) {
+function start(targetId) {
   console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady, targetId);
   if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection with client ' + targetId);
-    createPeerConnection(targetId);
+    handleCreatePeerConnection(targetId);
     peerConnections[targetId].addStream(localStream);
     isStarted = true;
     console.log('isInitiator', isInitiator);
     if (isInitiator) {
-      doCall(targetId);
+      handleCreateOffer(targetId);
     }
   }
 }
@@ -161,9 +162,9 @@ window.onbeforeunload = function() {
 
 //#region Handlers/Callbacks
 
-function createPeerConnection(targetId) {
+function handleCreatePeerConnection(targetId) {
   try {
-    peerConnections[targetId] = new RTCPeerConnection();
+    peerConnections[targetId] = new RTCPeerConnection(null);
     peerConnections[targetId].onicecandidate = handleIceCandidate;
     peerConnections[targetId].onaddstream = handleRemoteStreamAdded;
     peerConnections[targetId].onremovestream = handleRemoteStreamRemoved;
@@ -189,51 +190,50 @@ function handleIceCandidate(event) {
   }
 }
 
-function handleCreateOfferError(event) {
-  console.log('createOffer() error: ', event);
-}
-
-function doCall(targetId) {
+function handleCreateOffer(targetId) {
   console.log('Sending offer to peer');
   // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
   peerConnections[targetId].createOffer().then(function(offer){
-    console.log('setLocalAndSendMessage sending message', offer);
+    console.log("Setting local description " + offer);
     return peerConnections[targetId].setLocalDescription(offer);
   })
-  .then(function(offer){
-    sendMessage(offer);
+  .then(function(){
+    sendMessage(peerConnections[targetId].localDescription);
   })
   .catch(handleCreateOfferError);
 }
 
-function doAnswer(targetId) {
+function handleCreateAnswer(targetId) {
   console.log('Sending answer to peer.');
   // peerConnections[targetId].createAnswer().then(
   //   setLocalAndSendMessage(targetId),
   //   onCreateSessionDescriptionError
   // );
   peerConnections[targetId].createAnswer().then(function(answer) {
-    console.log('setLocalAndSendMessage sending message', answer);
     return peerConnections[targetId].setLocalDescription(answer);
   })
-  .then(function(answer){
-    sendMessage(answer);
+  .then(function(){
+    sendMessage(peerConnections[targetId].localDescription);
   })
   .catch(onCreateSessionDescriptionError);
 }
 
 //TODO might not work with targetid as an argument when called in createOffer() and createAnswer(), find another solution if broken
-function setLocalAndSendMessage(sessionDescription, targetId) {
-  peerConnections[targetId].setLocalDescription(sessionDescription);
-  console.log('setLocalAndSendMessage sending message', sessionDescription);
-  sendMessage(sessionDescription);
+// function setLocalAndSendMessage(sessionDescription, targetId) {
+//   peerConnections[targetId].setLocalDescription(sessionDescription);
+//   console.log('setLocalAndSendMessage sending message', sessionDescription);
+//   sendMessage(sessionDescription);
+// }
+
+function handleCreateOfferError(event) {
+  console.log('createOffer() error: ', event);
 }
 
 function onCreateSessionDescriptionError(error) {
   trace('Failed to create session description: ' + error.toString());
 }
 
-function requestTurn(turnURL) {
+function handleRequestTurn(turnURL) {
   var turnExists = false;
   for (var i in pcConfig.iceServers) {
     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
