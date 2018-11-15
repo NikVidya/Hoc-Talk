@@ -11,7 +11,7 @@ var app = http.createServer((req, res) => {
 }).listen(8080);
 
 var io = socketIO.listen(app);
-io.sockets.on('connection', (socket) => {
+io.sockets.on('connection', socket => {
     // convenience function to log server messages on the client
     function log() {
         var array = ['Message from server:'];
@@ -26,7 +26,7 @@ io.sockets.on('connection', (socket) => {
         socket.broadcast.emit('message', message, senderId);
     });
 
-    socket.on('create or join', (room) => {
+    socket.on('create or join', room => {
         log('Received request to create or join room ' + room);
         var clientsInRoom = io.sockets.adapter.rooms[room];
         var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0; //if there are clients in room, return the number, else 0
@@ -47,7 +47,7 @@ io.sockets.on('connection', (socket) => {
     socket.on('ipaddr', () => {
         var ifaces = os.networkInterfaces();
         for (var dev in ifaces) {
-            ifaces[dev].forEach((details) => {
+            ifaces[dev].forEach(details => {
                 if (details.family === 'IPv4' && details.address !== '127.0.0.1') {
                     socket.emit('ipaddr', details.address);
                 }

@@ -34,8 +34,9 @@ var constraints = {
 
 //#endregion
 
-//#region Socket
+//#region Main
 
+//enter room to join via URL or prompt
 window.room = window.location.hash.substring(1);
 if (!room) {
   window.room = window.location.hash = prompt("Enter room name:");
@@ -46,29 +47,56 @@ if (room !== '') {
   console.log('Attempted to create or join room', room);
 }
 
-socket.on('created', (room) => {
-  console.log('Created room ' + room);
+//get local mediastream once we are in a room
+navigator.mediaDevices.getUserMedia({
+  audio: false,
+  video: true
+})
+  .then(gotStream)
+  .catch(e => alert('getUserMedia() error: ' + e.name));
+
+function gotStream(stream) {
+  console.log('Adding local stream.');
+  localStream = stream;
+  localVideo.srcObject = stream;
+  sendMessage('got user media');
+  // if (isInitiator) { //might not need this
+  //   start(session.id);
+  // }
+}
+
+console.log('Getting user media with constraints', constraints);
+
+if (location.hostname !== 'localhost') {
+  handleRequestTurn(
+    'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
+  );
+}
+
+//#endregion
+
+//#region Socket Callbacks
+
+socket.on('created', room => {
+  console.log('Created room ' + room + ', ' + socket.id + ' is initiator');
   isInitiator = true;
 });
 
-socket.on('full', (room) => {
+socket.on('full', room => {
   console.log('Room ' + room + ' is full');
 });
 
-socket.on('join', (room) => {
+socket.on('join', room => {
   console.log('Another peer made a request to join room ' + room);
-  if (isInitiator) {
-    console.log('This peer is the initiator of room ' + room + '!');
-  }
   isChannelReady = true;
 });
 
-socket.on('joined', (room) => {
+socket.on('joined', room => {
   console.log('joined: ' + room);
   isChannelReady = true;
 });
 
-socket.on('log', (array) => {
+socket.on('log', array => {
   console.log.apply(console, array);
 });
 
@@ -103,63 +131,29 @@ socket.on('message', (message, senderId) => {
     });
     peerConnections[senderId].addIceCandidate(candidate);
   } else if (message === 'bye' && isStarted) {
-    handleRemoteHangup();
+    handleRemoteHangup(senderId);
   }
 });
 
-//#endregion
-
-//#region Main
-
-//get local mediastream
-navigator.mediaDevices.getUserMedia({
-  audio: false,
-  video: true
-})
-  .then(gotStream)
-  .catch((e) => {
-    alert('getUserMedia() error: ' + e.name);
-  });
-
-function gotStream(stream) {
-  console.log('Adding local stream.');
-  localStream = stream;
-  localVideo.srcObject = stream;
-  sendMessage('got user media');
-  if (isInitiator) {
-    start(session.id);
-  }
-}
-
-console.log('Getting user media with constraints', constraints);
-
-if (location.hostname !== 'localhost') {
-  handleRequestTurn(
-    'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
-  );
-}
-
-function start(targetId) {
-  console.log('>>>>>>> maybeStart() ', isStarted, localStream, isChannelReady, targetId);
-  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) {
-    console.log('>>>>>> creating peer connection with client ' + targetId);
-    handleCreatePeerConnection(targetId);
-    peerConnections[targetId].addStream(localStream);
-    isStarted = true;
-    console.log('isInitiator', isInitiator);
-    if (isInitiator) {
-      handleCreateOffer(targetId);
-    }
-  }
-}
-
-window.onbeforeunload = () => {
-  sendMessage('bye');
-};
 
 //#endregion
 
 //#region Handlers/Callbacks
+
+function start(targetId) {
+  console.log('>>>>>>> start() ', isStarted, localStream, isChannelReady, targetId);
+  //if the call isn't started from this client, we have a local stream, we have requested the server to join the room
+  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) { //TODO possibly bad to send offer to this client
+    console.log('>>>>>> creating peer connection with client ' + targetId);
+    handleCreatePeerConnection(targetId);
+    peerConnections[targetId].addStream(localStream);
+    isStarted = true;
+    // console.log('isInitiator', isInitiator);
+    // if (isInitiator) {
+    handleCreateOffer(targetId);
+    //}
+  }
+}
 
 function handleCreatePeerConnection(targetId) {
   try {
@@ -189,17 +183,32 @@ function handleIceCandidate(event) {
   }
 }
 
+function handleRemoteStreamAdded(event) {
+  console.log('Remote stream added.');
+  remoteStreams.push(event.stream);
+  var newVideoElement = document.createElement('video');
+  newVideoElement.autoplay = true;
+  newVideoElement.className = "remoteVideo";
+  document.getElementById('videos').appendChild(newVideoElement);
+  remoteVideos.push(newVideoElement);
+  remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
+}
+
+function handleRemoteStreamRemoved(event) {
+  console.log('Remote stream removed. Event: ', event);
+}
+
 function handleCreateOffer(targetId) {
-  console.log('Sending offer to peer');
-  // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
-  peerConnections[targetId].createOffer().then((offer) => {
-    console.log("Setting local description " + offer);
-    return peerConnections[targetId].setLocalDescription(offer);
-  })
-    .then(() => {
-      sendMessage(peerConnections[targetId].localDescription);
+    console.log('Sending offer to peer');
+    // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
+    peerConnections[targetId].createOffer().then(offer => {
+      console.log("Setting local description " + offer);
+      return peerConnections[targetId].setLocalDescription(offer);
     })
-    .catch(handleCreateOfferError);
+      .then(() => {
+        sendMessage(peerConnections[targetId].localDescription);
+      })
+      .catch(handleCreateOfferError);
 }
 
 function handleCreateAnswer(targetId) {
@@ -208,7 +217,7 @@ function handleCreateAnswer(targetId) {
   //   setLocalAndSendMessage(targetId),
   //   onCreateSessionDescriptionError
   // );
-  peerConnections[targetId].createAnswer().then((answer) => {
+  peerConnections[targetId].createAnswer().then(answer => {
     return peerConnections[targetId].setLocalDescription(answer);
   })
     .then(() => {
@@ -261,31 +270,16 @@ function handleRequestTurn(turnURL) {
   }
 }
 
-function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
-  remoteStreams.push(event.stream);
-  var newVideoElement = document.createElement('video');
-  newVideoElement.autoplay = true;
-  newVideoElement.className = "remoteVideo";
-  document.getElementById('videos').appendChild(newVideoElement);
-  remoteVideos.push(newVideoElement);
-  remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
-}
-
-function handleRemoteStreamRemoved(event) {
-  console.log('Remote stream removed. Event: ', event);
+function handleRemoteHangup(peerId) {
+  console.log('Hanging up peerConnection ' + peerId);
+  peerConnection[peerId].close();
 }
 
 function hangup() {
-  console.log('Hanging up.');
+  console.log(socket.id + " hanging up.");
+  isInitiator = false;
   stop();
   sendMessage('bye');
-}
-
-function handleRemoteHangup() {
-  console.log('Session terminated.');
-  stop();
-  isInitiator = false;
 }
 
 function stop() {
@@ -293,4 +287,8 @@ function stop() {
   peerConnections.foreach(close());
   peerConnections = null;
 }
+
+window.onbeforeunload = () => {
+  sendMessage('bye');
+};
 //#endregion
