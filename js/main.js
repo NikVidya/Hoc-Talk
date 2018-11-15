@@ -6,7 +6,7 @@ var isChannelReady = false;
 var isInitiator = false;
 var isStarted = false;
 var localStream;
-var peerConnections = new Array();
+var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
 var turnReady;
 
 var pcConfig = {
@@ -46,16 +46,16 @@ if (room !== '') {
   console.log('Attempted to create or join room', room);
 }
 
-socket.on('created', function(room) {
+socket.on('created', (room) => {
   console.log('Created room ' + room);
   isInitiator = true;
 });
 
-socket.on('full', function(room) {
+socket.on('full', (room) => {
   console.log('Room ' + room + ' is full');
 });
 
-socket.on('join', function (room){
+socket.on('join', (room) => {
   console.log('Another peer made a request to join room ' + room);
   if (isInitiator) {
     console.log('This peer is the initiator of room ' + room + '!');
@@ -63,12 +63,12 @@ socket.on('join', function (room){
   isChannelReady = true;
 });
 
-socket.on('joined', function(room) {
+socket.on('joined', (room) => {
   console.log('joined: ' + room);
   isChannelReady = true;
 });
 
-socket.on('log', function(array) {
+socket.on('log', (array) => {
   console.log.apply(console, array);
 });
 
@@ -83,7 +83,6 @@ function sendMessage(message) {
 }
 
 // This client receives a message
-// TODO not receiving senderId from server messages?
 socket.on('message', (message, senderId) => {
   console.log('Client received message:', message);
   console.log('message from: ' + senderId);
@@ -117,10 +116,10 @@ navigator.mediaDevices.getUserMedia({
   audio: false,
   video: true
 })
-.then(gotStream)
-.catch(function(e) {
-  alert('getUserMedia() error: ' + e.name);
-});
+  .then(gotStream)
+  .catch((e) => {
+    alert('getUserMedia() error: ' + e.name);
+  });
 
 function gotStream(stream) {
   console.log('Adding local stream.');
@@ -154,7 +153,7 @@ function start(targetId) {
   }
 }
 
-window.onbeforeunload = function() {
+window.onbeforeunload = () => {
   sendMessage('bye');
 };
 
@@ -193,14 +192,14 @@ function handleIceCandidate(event) {
 function handleCreateOffer(targetId) {
   console.log('Sending offer to peer');
   // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
-  peerConnections[targetId].createOffer().then(function(offer){
+  peerConnections[targetId].createOffer().then((offer) => {
     console.log("Setting local description " + offer);
     return peerConnections[targetId].setLocalDescription(offer);
   })
-  .then(function(){
-    sendMessage(peerConnections[targetId].localDescription);
-  })
-  .catch(handleCreateOfferError);
+    .then(() => {
+      sendMessage(peerConnections[targetId].localDescription);
+    })
+    .catch(handleCreateOfferError);
 }
 
 function handleCreateAnswer(targetId) {
@@ -209,16 +208,15 @@ function handleCreateAnswer(targetId) {
   //   setLocalAndSendMessage(targetId),
   //   onCreateSessionDescriptionError
   // );
-  peerConnections[targetId].createAnswer().then(function(answer) {
+  peerConnections[targetId].createAnswer().then((answer) => {
     return peerConnections[targetId].setLocalDescription(answer);
   })
-  .then(function(){
-    sendMessage(peerConnections[targetId].localDescription);
-  })
-  .catch(onCreateSessionDescriptionError);
+    .then(() => {
+      sendMessage(peerConnections[targetId].localDescription);
+    })
+    .catch(onCreateSessionDescriptionError);
 }
 
-//TODO might not work with targetid as an argument when called in createOffer() and createAnswer(), find another solution if broken
 // function setLocalAndSendMessage(sessionDescription, targetId) {
 //   peerConnections[targetId].setLocalDescription(sessionDescription);
 //   console.log('setLocalAndSendMessage sending message', sessionDescription);
@@ -234,6 +232,7 @@ function onCreateSessionDescriptionError(error) {
 }
 
 function handleRequestTurn(turnURL) {
+  console.log("Requesting TURN server");
   var turnExists = false;
   for (var i in pcConfig.iceServers) {
     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
@@ -246,7 +245,7 @@ function handleRequestTurn(turnURL) {
     console.log('Getting TURN server from ', turnURL);
     // No TURN server. Get one from computeengineondemand.appspot.com:
     var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = () => {
       if (xhr.readyState === 4 && xhr.status === 200) {
         var turnServer = JSON.parse(xhr.responseText);
         console.log('Got TURN server: ', turnServer);
@@ -270,7 +269,7 @@ function handleRemoteStreamAdded(event) {
   newVideoElement.className = "remoteVideo";
   document.getElementById('videos').appendChild(newVideoElement);
   remoteVideos.push(newVideoElement);
-  remoteVideos[remoteVideos.length-1].srcObject = remoteStreams[remoteStreams.length-1];
+  remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
 }
 
 function handleRemoteStreamRemoved(event) {
