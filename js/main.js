@@ -4,7 +4,7 @@
 
 var isChannelReady = false;
 var isInitiator = false;
-var isStarted = false;
+var isStarted = new Array(); //stores whether stream is started with each client, allows dynamic client amount
 var localStream;
 var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
 var turnReady;
@@ -115,22 +115,24 @@ socket.on('message', (message, senderId) => {
   console.log('Client received message:', message);
   console.log('message from: ' + senderId);
   if (message === 'got user media') {
+    console.log("this client starting with client " + senderId);
     start(senderId);
   } else if (message.type === 'offer') {
-    if (!isInitiator && !isStarted) {
+    console.log(">>>>>>> received offer, params ", isInitiator, isStarted[senderId]);
+    if (!isInitiator && !isStarted[senderId]) {
       start(senderId);
     }
     peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
     handleCreateAnswer(senderId);
-  } else if (message.type === 'answer' && isStarted) {
+  } else if (message.type === 'answer' && isStarted[senderId]) {
     peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
-  } else if (message.type === 'candidate' && isStarted) {
+  } else if (message.type === 'candidate' && isStarted[senderId]) {
     var candidate = new RTCIceCandidate({
       sdpMLineIndex: message.label,
       candidate: message.candidate
     });
     peerConnections[senderId].addIceCandidate(candidate);
-  } else if (message === 'bye' && isStarted) {
+  } else if (message === 'bye' && isStarted[senderId]) {
     handleRemoteHangup(senderId);
   }
 });
@@ -141,13 +143,13 @@ socket.on('message', (message, senderId) => {
 //#region Handlers/Callbacks
 
 function start(targetId) {
-  console.log('>>>>>>> start() ', isStarted, localStream, isChannelReady, targetId);
-  //if the call isn't started from this client, we have a local stream, we have requested the server to join the room
-  if (!isStarted && typeof localStream !== 'undefined' && isChannelReady) { //TODO possibly bad to send offer to this client
+  console.log('>>>>>>> start() ', isStarted[targetId], localStream, isChannelReady, targetId);
+  //if the call isn't started from this client, we have a local stream, and we have requested the server to join the room
+  if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) { //TODO possibly bad to send offer to this client
     console.log('>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
     peerConnections[targetId].addStream(localStream);
-    isStarted = true;
+    isStarted[targetId] = true;
     // console.log('isInitiator', isInitiator);
     // if (isInitiator) {
     handleCreateOffer(targetId);
@@ -199,16 +201,16 @@ function handleRemoteStreamRemoved(event) {
 }
 
 function handleCreateOffer(targetId) {
-    console.log('Sending offer to peer');
-    // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
-    peerConnections[targetId].createOffer().then(offer => {
-      console.log("Setting local description " + offer);
-      return peerConnections[targetId].setLocalDescription(offer);
+  console.log('Sending offer to peer');
+  // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
+  peerConnections[targetId].createOffer().then(offer => {
+    console.log("Setting local description " + offer);
+    return peerConnections[targetId].setLocalDescription(offer);
+  })
+    .then(() => {
+      sendMessage(peerConnections[targetId].localDescription);
     })
-      .then(() => {
-        sendMessage(peerConnections[targetId].localDescription);
-      })
-      .catch(handleCreateOfferError);
+    .catch(handleCreateOfferError);
 }
 
 function handleCreateAnswer(targetId) {
@@ -283,7 +285,12 @@ function hangup() {
 }
 
 function stop() {
-  isStarted = false;
+  for (var index in isStarted) {
+    if (!isStarted.hasOwnProperty(index)) {
+      continue;
+    }
+    isStarted[index] = false;
+  }
   peerConnections.foreach(close());
   peerConnections = null;
 }
