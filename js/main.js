@@ -60,9 +60,6 @@ function gotStream(stream) {
   localStream = stream;
   localVideo.srcObject = stream;
   sendMessage('got user media');
-  // if (isInitiator) { //might not need this
-  //   start(session.id);
-  // }
 }
 
 console.log('Getting user media with constraints', constraints);
@@ -104,36 +101,40 @@ socket.on('log', array => {
 
 //#region Messages
 
-// This client sends a message, attaching its ID
-function sendMessage(message) {
-  console.log('Client ' + socket.id + ' sending message: ', message);
-  socket.emit('message', message, socket.id);
+// This client sends a message, attaching its ID, sending to targetId
+function sendMessage(message, targetId = "all") {
+  console.log('Client ' + socket.id + ' to ' + targetId + ' - sending message: ', message);
+  socket.emit('message', message, socket.id, targetId);
 }
 
 // This client receives a message
-socket.on('message', (message, senderId) => {
-  console.log('Client received message:', message);
-  console.log('message from: ' + senderId);
-  if (message === 'got user media') {
-    console.log("this client starting with client " + senderId);
-    start(senderId);
-  } else if (message.type === 'offer') {
-    console.log(">>>>>>> received offer, params ", isInitiator, isStarted[senderId]);
-    if (!isInitiator && !isStarted[senderId]) {
+socket.on('message', (message, senderId, targetId) => {
+  if (targetId === socket.id || targetId === "all") {
+    console.log('Client received message:', message);
+    console.log('message from: ' + senderId);
+    if (message === 'got user media') {
+      console.log("this client starting with client " + senderId);
       start(senderId);
+    } else if (message.type === 'offer') {
+      console.log(">>>>>>> received offer, params ", isInitiator, isStarted[senderId]);
+      if (!isInitiator && !isStarted[senderId]) {
+        start(senderId);
+      }
+      peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+      handleCreateAnswer(senderId);
+    } else if (message.type === 'answer' && isStarted[senderId]) {
+      peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+    } else if (message.type === 'candidate' && isStarted[senderId]) {
+      var candidate = new RTCIceCandidate({
+        sdpMLineIndex: message.label,
+        candidate: message.candidate
+      });
+      peerConnections[senderId].addIceCandidate(candidate);
+    } else if (message === 'bye' && isStarted[senderId]) {
+      handleRemoteHangup(senderId);
     }
-    peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
-    handleCreateAnswer(senderId);
-  } else if (message.type === 'answer' && isStarted[senderId]) {
-    peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
-  } else if (message.type === 'candidate' && isStarted[senderId]) {
-    var candidate = new RTCIceCandidate({
-      sdpMLineIndex: message.label,
-      candidate: message.candidate
-    });
-    peerConnections[senderId].addIceCandidate(candidate);
-  } else if (message === 'bye' && isStarted[senderId]) {
-    handleRemoteHangup(senderId);
+  } else {
+    console.log("message wasn't for me!");
   }
 });
 
@@ -150,10 +151,7 @@ function start(targetId) {
     handleCreatePeerConnection(targetId);
     peerConnections[targetId].addStream(localStream);
     isStarted[targetId] = true;
-    // console.log('isInitiator', isInitiator);
-    // if (isInitiator) {
     handleCreateOffer(targetId);
-    //}
   }
 }
 
@@ -202,37 +200,26 @@ function handleRemoteStreamRemoved(event) {
 
 function handleCreateOffer(targetId) {
   console.log('Sending offer to peer');
-  // peerConnections[targetId].createOffer(setLocalAndSendMessage(targetId), handleCreateOfferError);
   peerConnections[targetId].createOffer().then(offer => {
     console.log("Setting local description " + offer);
     return peerConnections[targetId].setLocalDescription(offer);
   })
     .then(() => {
-      sendMessage(peerConnections[targetId].localDescription);
+      sendMessage(peerConnections[targetId].localDescription, targetId);
     })
     .catch(handleCreateOfferError);
 }
 
 function handleCreateAnswer(targetId) {
   console.log('Sending answer to peer.');
-  // peerConnections[targetId].createAnswer().then(
-  //   setLocalAndSendMessage(targetId),
-  //   onCreateSessionDescriptionError
-  // );
   peerConnections[targetId].createAnswer().then(answer => {
     return peerConnections[targetId].setLocalDescription(answer);
   })
     .then(() => {
-      sendMessage(peerConnections[targetId].localDescription);
+      sendMessage(peerConnections[targetId].localDescription, targetId);
     })
     .catch(onCreateSessionDescriptionError);
 }
-
-// function setLocalAndSendMessage(sessionDescription, targetId) {
-//   peerConnections[targetId].setLocalDescription(sessionDescription);
-//   console.log('setLocalAndSendMessage sending message', sessionDescription);
-//   sendMessage(sessionDescription);
-// }
 
 function handleCreateOfferError(event) {
   console.log('createOffer() error: ', event);

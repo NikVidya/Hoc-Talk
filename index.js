@@ -7,6 +7,9 @@ var socketIO = require('socket.io');
 
 var fileServer = new (nodeStatic.Server)();
 var app = http.createServer((req, res) => {
+    res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
+    res.setHeader('Expires', '-1');
+    res.setHeader('Pragma', 'no-cache');
     fileServer.serve(req, res);
 }).listen(8080);
 
@@ -20,10 +23,10 @@ io.sockets.on('connection', socket => {
     }
 
     //relay for client messages
-    socket.on('message', (message, senderId) => {
-        log('Client ' + senderId + ' said: ', message);
+    socket.on('message', (message, senderId, targetId) => {
+        log('Client ' + senderId + ' said to client ' + targetId, message);
         //sends to all clients, limit to room in future TODO
-        socket.broadcast.emit('message', message, senderId);
+        socket.broadcast.emit('message', message, senderId, targetId);
     });
 
     socket.on('create or join', room => {
@@ -35,7 +38,7 @@ io.sockets.on('connection', socket => {
             socket.join(room);
             log('Client ID ' + socket.id + ' created room ' + room);
             socket.emit('created', room, socket.id);
-        } else if (numClients > 0 && numClients < 4) {//limit 4 clients to a room
+        } else if (numClients > 0 && numClients < 4) {//limit 4 clients to a room TODO increase this
             log('Client ID ' + socket.id + ' joined room ' + room);
             io.sockets.in(room).emit('join', room);
             socket.join(room);
