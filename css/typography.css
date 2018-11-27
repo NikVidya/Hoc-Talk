@@ -30,7 +30,7 @@ ul, ol, li {
 h1,
 h2,
 h3 {
-    font-family: "dejavu";
+    font-family: "dejavu", sans-serif;
     text-decoration:none;
 }
 

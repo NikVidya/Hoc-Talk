@@ -69,6 +69,11 @@ header nav a:hover {
 	background-color: rgba(0,0,0,0.2);
 	color: #fff;
 }
+header p {
+	margin: 0px;;
+	color: #fff;
+	font-family: 'dejavu', sans-serif;
+}
 .current-page {
 	text-decoration:underline;
 	text-decoration-color:aqua;
@@ -170,18 +175,13 @@ body::after {
 	height:95px;
 }
 .content {
-	text-align: center;
-	padding: 1rem;
 	margin-left:5%;
 	margin-right:5%;
 	margin-bottom: 50px;
-	border-top: 1px solid #555;
+	border-left: 1px solid #080808;
 	border-right: 1px solid #080808;
-	border-bottom: 1px solid #080808;
-	border-left: 1px solid #555;
 	background-color:#141414;
 	overflow:hidden;
-	min-height:500px;
 }
 .content h3 {
 	text-align:left;
@@ -200,26 +200,28 @@ body::after {
 }
 /* when vertically aligned content should stay together */
 .content-column {
+	width: 50%;
+	display:inline-block;
+	text-align:left;
+}
+.local-video-column {
 	width: auto;
 	min-height:480px;
 	text-align:left;
 	float:left;
 	padding: 1rem;
 	background-color:#111;
-	border-top: solid 1px #080808;
 	border-right: 1px solid #252525;
-	border-bottom: solid 1px #252525;
 	border-left: 1px solid #080808;
 }
 .content-column .box {
 	border-top: solid 1px #333;
-	border-bottom: solid 1px #080808;
 }
 .left-column .box {
-	border-right: solid 1px #080808;
+	/* border-right: solid 1px #080808; */
 }
 .right-column .box {
-	border-left: solid 1px #333;
+	/* border-left: solid 1px #333; */
 }
 /*
 	--~~== Generic Elements ==~~--
@@ -246,7 +248,6 @@ body::after {
 	margin-right: 5%;
 	width: 90%;
 	max-height: 360px;
-	border-radius: 5px;
 }
 .small-image-box {
 	height:64px;
@@ -267,7 +268,6 @@ body::after {
 	height: 64px;
 	overflow: hidden;
 	display:inline-block;
-	border-radius:0;
 	margin: 0;
 }
 .box iframe {
@@ -275,7 +275,6 @@ body::after {
 	margin-right: 5%;
 	width: 90%;
 	height: 100%;
-	border-radius: 5px;
 }
 @media (min-width: 125rem) {
 	.box img{
@@ -427,7 +426,7 @@ body::after {
 	--~~== Interactive Elements ==~~--
 */
 	.btn {
-		border-radius: 3px;
+		border-radius: 2px;
 		padding: 7px;
 		margin:3px;
 		color: #FFF;
@@ -451,12 +450,6 @@ body::after {
 	.btn.nav {
 		text-decoration: none;
 	}
-	.btn.nav:visited {
-		color: #FFF;
-	}
-	.btn.nav:visited:hover {
-		color: #FFF;
-	}
 	.btn.reset {
 		color: #555;
 	}
@@ -467,17 +460,18 @@ body::after {
 		background-color: black;
 		color: #FFF;
 	}
+	form {
+		margin: 1.1rem;
+	}
 /*
 	--~~== End Interactive Elements ==~~--
 */
 video {
-	max-width: 100%;
 	width: 480px;
+	height:auto;
   }
   #localVideo {
-	max-width: 100%;
 	width: 240px;
-	background-color:pink;
   }
   .remoteVideo {
 	  display:inline-block;

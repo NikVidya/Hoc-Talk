@@ -2,62 +2,79 @@
 <html>
 
 <head>
-	<title>Hoc Talk</title>
+    <title>Hoc Talk</title>
 
-	<meta name="author" content="Nicholas Mason">
-	<meta name="description" content="Hoc Talk is an easy means of video confrencing with multiple peers, without the use of invasive sign-ups or lengthy user profile creation.">
-	<meta name="keywords" content="Nicholas, Mason, Nick, Hoc, Talk, Hoc Talk, HocTalk, Video, Confrence, Confrencing, Stream, Streaming">
-	<meta charset="utf-8">
-	<meta name=viewport content="width=device-width, initial-scale=1">
+    <meta name="author" content="Nicholas Mason">
+    <meta name="description" content="Hoc Talk is an easy means of video confrencing with multiple peers, without the use of invasive sign-ups or lengthy user profile creation.">
+    <meta name="keywords" content="Nicholas, Mason, Nick, Hoc, Talk, Hoc Talk, HocTalk, Video, Confrence, Confrencing, Stream, Streaming">
+    <meta charset="utf-8">
+    <meta name=viewport content="width=device-width, initial-scale=1">
 
-	<!-- Style Sheets -->
-	<!-- Reset -->
-	<link href="css/normalize.css" rel="stylesheet">
-	<!-- Fonts -->
-	<link href="css/fonts.css" rel="stylesheet">
-	<!-- Overall -->
-	<link href="css/main.css" rel="stylesheet">
-	<!-- Typography -->
-	<link href="css/typography.css" rel="stylesheet">
-	<!-- Whole Elements -->
-	<link href="css/elements.css" rel="stylesheet">
-	<!-- font awesome -->
-	<link href="fonts/fontawesome-free-5.3.1-web/css/all.css" rel="stylesheet">
-	<!-- /Style Sheets -->
+    <!-- Style Sheets -->
+    <!-- Reset -->
+    <link href="css/normalize.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="css/fonts.css" rel="stylesheet">
+    <!-- Overall -->
+    <link href="css/main.css" rel="stylesheet">
+    <!-- Typography -->
+    <link href="css/typography.css" rel="stylesheet">
+    <!-- Whole Elements -->
+    <link href="css/elements.css" rel="stylesheet">
+    <!-- font awesome -->
+    <link href="fonts/fontawesome-free-5.3.1-web/css/all.css" rel="stylesheet">
+    <!-- /Style Sheets -->
 </head>
 
 <body>
-	<header>
-		<div class="left-header">
-			<h1><a href="index.html">Hoc Talk</a></h1>
-		</div><div class="right-header">
-			<nav>
-				<a href="index.html" class="current-page"><i class="fas fa-home"></i> Home</a>
-				<a href="about.html"><i class="fas fa-user"></i> About</a>
-			</nav>
-		</div>
-	</header>
+    <header>
+        <div class="left-header">
+            <h1><a href="index.html">Hoc Talk</a></h1>
+            <p>Ad hoc video chatting</p>
+        </div><div class="right-header">
+            <nav>
+                <a href="index.html" class="current-page"><i class="fas fa-home"></i> Home</a>
+                <a href="about.html"><i class="fas fa-user"></i> About</a>
+            </nav>
+        </div>
+    </header>
 
-	<div class="content">
-				<div id="videos" class="video-container">
-					<div class="content-column">
-						<video id="localVideo" autoplay muted></video>
-					</div>
-				</div>
-				<script src="/socket.io/socket.io.js"></script>
-				<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-				<script src="js/main.js"></script>
-		<footer>
-			<div class="left-footer">
-				<p class="lead">&#169; Nicholas Mason</p>
-				<p><a href="mailto:n.mason1@outlook.com">n.mason1@outlook.com</a></p>
-				<p><a href="https://vdm.fun/~nick/">https://vdm.fun/~nick/</a></p>
-			</div><div class="right-footer">
-				<nav>
-					<a href="https://github.com/nikvidya/Hoc-Talk">Site source code <i class="fab fa-github-square"></i></a>
-				</nav>
-			</div>
-		</footer>
+    <div class="content">
+        <div class="content-column left-column">
+            <h3>About</h3>
+            <div class="box">
+                <p>
+                    Hoc Talk is an ad-hoc video confrencing service with a focus on quick setup, privacy and ease of use.
+                    Other means of video confrencing necessitate lengthy, intrusive sign-up processes, downloading programs and
+                    putting up with annoying interfaces. With an ongoing commitment to good HCI principles and the KISS principle,
+                    Hoc Talk seeks to break these annoying trends and offer simple, bare-bones video confrencing.
+                </p> 
+                <p>
+                    Note: JavaScript must be enabled to use this service.
+                </p>
+            </div>
+        </div><div class="content-column right-column">
+            <h3>&nbsp;</h3>
+            <div class="box">
+                <p>Enter a unique chatroom id to begin:</p> 
+                <form action="chatroom.html" onsubmit="location.href=this.action+'#'+this.room.value; return false;">
+                    <input type="text" name="room"> 
+                    <button class="btn submit">Enter</button>
+                </form>
+            </div>
+        </div>
+
+        <footer>
+            <div class="left-footer">
+                <p class="lead">&#169; Nicholas Mason</p>
+                <p><a href="mailto:n.mason1@outlook.com">n.mason1@outlook.com</a></p>
+                <p><a href="https://vdm.fun/~nick/">https://vdm.fun/~nick/</a></p>
+            </div><div class="right-footer">
+                <nav>
+                    <a href="https://github.com/nikvidya/Hoc-Talk">Site source code <i class="fab fa-github-square"></i></a>
+                </nav>
+            </div>
+        </footer>
 </body>
 
 </html>
