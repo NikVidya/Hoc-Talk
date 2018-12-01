@@ -2,11 +2,10 @@
 
 //#region Definitions
 
+var socket = io.connect();
+
 var isChannelReady = false;
 var isInitiator = false;
-var isStarted = new Array(); //stores whether stream is started with each client, allows dynamic client amount
-var localStream;
-var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
 var turnReady;
 
 var pcConfig = {
@@ -21,16 +20,19 @@ var sdpConstraints = {
   offerToReceiveVideo: true
 };
 
-var socket = io.connect();
 
+var localStream;
 var localVideo = document.querySelector('#localVideo');
+
+var isStarted = new Array();
+var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
 var remoteStreams = new Array();
 var remoteVideos = new Array(); //defined dynamically as streams are added
 
 var constraints = {
   audio: false,
   video: true
-};
+}; //constraints for remote videos only
 
 //#endregion
 
@@ -146,7 +148,7 @@ socket.on('message', (message, senderId, targetId) => {
 function start(targetId) {
   console.log('>>>>>>> start() ', isStarted[targetId], localStream, isChannelReady, targetId);
   //if the call isn't started from this client, we have a local stream, and we have requested the server to join the room
-  if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) { //TODO possibly bad to send offer to this client
+  if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
     peerConnections[targetId].addTrack(localStream.getTracks()[0], localStream);
@@ -163,13 +165,18 @@ function handleCreatePeerConnection(targetId) {
       console.log('Remote stream added.');
       remoteStreams.push(event.streams[0]);
       var newVideoElement = document.createElement('video');
-      newVideoElement.autoplay = true;
-      newVideoElement.controls = true;
       newVideoElement.id = targetId;
       newVideoElement.className = "remoteVideo";
-      document.getElementById('videos').appendChild(newVideoElement);
+      newVideoElement.autoplay = true;
+      // newVideoElement.controls = true;
+      var newVideoContainer = document.createElement('div');
+      newVideoContainer.className = "remote-video-container";
+      newVideoContainer.id = targetId + "-container";
+      document.getElementById('videos').appendChild(newVideoContainer);
+      newVideoContainer.appendChild(newVideoElement);
       remoteVideos.push(newVideoElement);
       remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
+      addControls(newVideoElement, newVideoContainer);
     };
     console.log('Created RTCPeerConnnection');
   } catch (e) {
@@ -257,8 +264,12 @@ function handleRequestTurn(turnURL) {
 
 function handleRemoteHangup(peerId) {
   console.log('Hanging up peerConnection ' + peerId);
+  remoteStreams.splice(remoteStreams.indexOf(remoteStreams[peerId]), 1);
   peerConnections[peerId].close();
-  document.getElementById(peerId).remove();
+  delete peerConnections[peerId];
+  isStarted[peerId] = false;
+  remoteVideos.splice(remoteVideos.indexOf(document.getElementById(peerId)), 1)[0].remove();
+  document.getElementById(peerId + "-container").remove();
 }
 
 function hangup() {

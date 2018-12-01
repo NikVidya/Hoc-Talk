@@ -472,17 +472,42 @@ body::after {
 	form {
 		margin: 1.1rem;
 	}
+
+	.fs-btn {
+		position:absolute;
+		right: 13px;
+		bottom: 15px;
+		z-index: 1;
+	}
+	.volume-bar {
+		position:absolute;
+		left: 53px;
+		bottom: 23px;
+		z-index: 1;
+	}
+	.mute-btn {
+		text-align:center;
+		width:30px;
+		position:absolute;
+		left: 13px;
+		bottom: 15px;
+		z-index: 1;
+	}
 /*
 	--~~== End Interactive Elements ==~~--
 */
 video {
 	width: 428px;
 	height:auto;	
-  }
-  #localVideo {
+}
+#localVideo {
 	width: 240px;
-  }
-  .remoteVideo {
+}
+.remoteVideo {
 	  display:inline-block;
 	  margin: 1rem;
-  }
+}
+.remote-video-container {
+	display:inline-block;
+	position:relative;
+}
