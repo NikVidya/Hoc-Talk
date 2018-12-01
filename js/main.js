@@ -149,7 +149,7 @@ function start(targetId) {
   if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) { //TODO possibly bad to send offer to this client
     console.log('>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
-    peerConnections[targetId].addStream(localStream);
+    peerConnections[targetId].addTrack(localStream.getTracks()[0], localStream);
     isStarted[targetId] = true;
     handleCreateOffer(targetId);
   }
@@ -159,8 +159,18 @@ function handleCreatePeerConnection(targetId) {
   try {
     peerConnections[targetId] = new RTCPeerConnection(null);
     peerConnections[targetId].onicecandidate = handleIceCandidate;
-    peerConnections[targetId].onaddstream = handleRemoteStreamAdded;
-    peerConnections[targetId].onremovestream = handleRemoteStreamRemoved;
+    peerConnections[targetId].ontrack = event => {
+      console.log('Remote stream added.');
+      remoteStreams.push(event.streams[0]);
+      var newVideoElement = document.createElement('video');
+      newVideoElement.autoplay = true;
+      newVideoElement.controls = true;
+      newVideoElement.id = targetId;
+      newVideoElement.className = "remoteVideo";
+      document.getElementById('videos').appendChild(newVideoElement);
+      remoteVideos.push(newVideoElement);
+      remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
+    };
     console.log('Created RTCPeerConnnection');
   } catch (e) {
     console.log('Failed to create PeerConnection, exception: ' + e.message);
@@ -181,21 +191,6 @@ function handleIceCandidate(event) {
   } else {
     console.log('End of candidates.');
   }
-}
-
-function handleRemoteStreamAdded(event) {
-  console.log('Remote stream added.');
-  remoteStreams.push(event.stream);
-  var newVideoElement = document.createElement('video');
-  newVideoElement.autoplay = true;
-  newVideoElement.className = "remoteVideo";
-  document.getElementById('videos').appendChild(newVideoElement);
-  remoteVideos.push(newVideoElement);
-  remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
-}
-
-function handleRemoteStreamRemoved(event) {
-  console.log('Remote stream removed. Event: ', event);
 }
 
 function handleCreateOffer(targetId) {
@@ -226,6 +221,7 @@ function handleCreateOfferError(event) {
 }
 
 function onCreateSessionDescriptionError(error) {
+  1
   trace('Failed to create session description: ' + error.toString());
 }
 
@@ -261,7 +257,8 @@ function handleRequestTurn(turnURL) {
 
 function handleRemoteHangup(peerId) {
   console.log('Hanging up peerConnection ' + peerId);
-  peerConnection[peerId].close();
+  peerConnections[peerId].close();
+  document.getElementById(peerId).remove();
 }
 
 function hangup() {
