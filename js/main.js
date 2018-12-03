@@ -104,9 +104,9 @@ socket.on('log', array => {
 //#region Messages
 
 // This client sends a message, attaching its ID, sending to targetId
-function sendMessage(message, targetId = "all") {
+function sendMessage(message, targetId = "all", room = window.room) {
   console.log('Client ' + socket.id + ' to ' + targetId + ' - sending message: ', message);
-  socket.emit('message', message, socket.id, targetId);
+  socket.emit('message', message, socket.id, targetId, room);
 }
 
 // This client receives a message
@@ -264,19 +264,18 @@ function handleRequestTurn(turnURL) {
 
 function handleRemoteHangup(peerId) {
   console.log('Hanging up peerConnection ' + peerId);
-  remoteStreams.splice(remoteStreams.indexOf(remoteStreams[peerId]), 1);
-  peerConnections[peerId].close();
-  delete peerConnections[peerId];
-  isStarted[peerId] = false;
   remoteVideos.splice(remoteVideos.indexOf(document.getElementById(peerId)), 1)[0].remove();
   document.getElementById(peerId + "-container").remove();
+  peerConnections[peerId].close();
+  peerConnections[peerId] = null;
+  delete peerConnections[peerId];
+  isStarted[peerId] = false;
 }
 
 function hangup() {
   console.log(socket.id + " hanging up.");
   isInitiator = false;
   stop();
-  sendMessage('bye');
 }
 
 function stop() {
@@ -286,11 +285,23 @@ function stop() {
     }
     isStarted[index] = false;
   }
-  peerConnections.foreach(close());
-  peerConnections = null;
+  for (var  index in isStarted) {
+    peerConnections[index].close();
+    peerConnections[index] = null;
+  }
+  // peerConnections.foreach(close());
+  peerConnections = new Array();
+  isStarted = new Array();
+  peerConnections = new Array();
+  remoteStreams = new Array();
+  remoteVideos = new Array();
+  document.getElementsByClassName("remoteVideo").foreach(remove());
+  document.getElementsByClassName("remote-video-container").foreach(remove());
 }
 
 window.onbeforeunload = () => {
-  sendMessage('bye');
+  sendMessage("bye");
+  hangup();
+  return "Hanging Up";
 };
 //#endregion

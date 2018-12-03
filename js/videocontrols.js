@@ -43,6 +43,7 @@ function addControls(videoElement, videoContainer) {
     videoContainer.appendChild(volumeSlider);
     videoContainer.appendChild(muteButton);
 
+    //display controls on hover
     fullScreenButton.style.display = "none";
     volumeSlider.style.display = "none";
     muteButton.style.display = "none";

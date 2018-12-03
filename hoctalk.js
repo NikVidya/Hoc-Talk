@@ -23,10 +23,10 @@ io.sockets.on('connection', socket => {
     }
 
     //relay for client messages
-    socket.on('message', (message, senderId, targetId) => {
+    socket.on('message', (message, senderId, targetId, room) => {
         log('Client ' + senderId + ' said to client ' + targetId, message);
         //sends to all clients, limit to room in future TODO
-        socket.broadcast.emit('message', message, senderId, targetId);
+        socket.to(room).emit('message', message, senderId, targetId);
     });
 
     socket.on('create or join', room => {

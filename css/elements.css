@@ -434,65 +434,65 @@ body::after {
 /*
 	--~~== Interactive Elements ==~~--
 */
-	.btn {
-		border-radius: 2px;
-		padding: 7px;
-		margin:3px;
-		color: #FFF;
-		background: #033;
-		text-decoration: none;
-		transition: background-color 200ms, color 200ms;
-		cursor: pointer;
-		font-family: "dejavusans";
-		border-top:solid 1px aqua;
-		border-left:solid 1px aqua;
-		border-right:solid 1px #077;
-		border-bottom:solid 1px #077;
-	}
-	.btn:hover {
-		background-color: #127a81;
-		color: #FFF;
-	}
-	.btn:active {
-		background-color: #244
-	}
-	.btn.nav {
-		text-decoration: none;
-	}
-	.btn.reset {
-		color: #555;
-	}
-	.btn.reset:hover{
-		background-color:#333;
-	}
-	.btn.reset:active {
-		background-color: black;
-		color: #FFF;
-	}
-	form {
-		margin: 1.1rem;
-	}
+.btn {
+	border-radius: 2px;
+	padding: 7px;
+	margin:3px;
+	color: #FFF;
+	background: #033;
+	text-decoration: none;
+	transition: background-color 200ms, color 200ms;
+	cursor: pointer;
+	font-family: "dejavusans";
+	border-top:solid 1px aqua;
+	border-left:solid 1px aqua;
+	border-right:solid 1px #077;
+	border-bottom:solid 1px #077;
+}
+.btn:hover {
+	background-color: #127a81;
+	color: #FFF;
+}
+.btn:active {
+	background-color: #244
+}
+.btn.nav {
+	text-decoration: none;
+}
+.btn.reset {
+	color: #555;
+}
+.btn.reset:hover{
+	background-color:#333;
+}
+.btn.reset:active {
+	background-color: black;
+	color: #FFF;
+}
+form {
+	margin: 1.1rem;
+}
 
-	.fs-btn {
-		position:absolute;
-		right: 13px;
-		bottom: 15px;
-		z-index: 1;
-	}
-	.volume-bar {
-		position:absolute;
-		left: 53px;
-		bottom: 23px;
-		z-index: 1;
-	}
-	.mute-btn {
-		text-align:center;
-		width:30px;
-		position:absolute;
-		left: 13px;
-		bottom: 15px;
-		z-index: 1;
-	}
+.fs-btn {
+	position:absolute;
+	right: 13px;
+	bottom: 15px;
+	z-index: 1;
+}
+.volume-bar {
+	position:absolute;
+	left: 53px;
+	bottom: 23px;
+	z-index: 1;
+}
+.mute-btn {
+	text-align:center;
+	width:30px;
+	position:absolute;
+	left: 13px;
+	bottom: 15px;
+	z-index: 1;
+}
 /*
 	--~~== End Interactive Elements ==~~--
 */
