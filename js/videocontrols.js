@@ -26,17 +26,16 @@ function addControls(videoElement, videoContainer) {
     });
 
     //mute button
+    var muteBtnIcons = {
+        unmuted: '<i class="fas fa-volume-up"></i>',
+        muted: '<i class="fas fa-volume-off"></i>'
+    }
     var muteButton = document.createElement('button');
     muteButton.className = "btn mute-btn";
-    muteButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+    muteButton.innerHTML = muteBtnIcons.unmuted;
     muteButton.addEventListener("click", () => {
-        if (videoElement.muted == false) {
-            muteButton.innerHTML = '<i class="fas fa-volume-off"></i>';
-            videoElement.muted = true;
-        } else {
-            muteButton.innerHTML = '<i class="fas fa-volume-up"></i>';
-            videoElement.muted = false;
-        }
+        videoElement.muted = !videoElement.muted;
+        muteButton.innerHTML = (muteButton.innerHTML == muteBtnIcons.unmuted ? muteBtnIcons.muted : muteBtnIcons.unmuted);
     })
 
     videoContainer.appendChild(fullScreenButton);

@@ -16,7 +16,7 @@ var pcConfig = {
 
 // Set up audio and video regardless of what devices are present.
 var sdpConstraints = {
-  offerToReceiveAudio: false,
+  offerToReceiveAudio: true,
   offerToReceiveVideo: true
 };
 
@@ -27,10 +27,10 @@ var localVideo = document.querySelector('#localVideo');
 var isStarted = new Array();
 var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
 var remoteStreams = new Array();
-var remoteVideos = new Array(); //defined dynamically as streams are added
+var remoteVideos = new Array();
 
 var constraints = {
-  audio: false,
+  audio: true,
   video: true
 }; //constraints for remote videos only
 
@@ -51,7 +51,7 @@ if (room !== '') {
 
 //get local mediastream once we are in a room
 navigator.mediaDevices.getUserMedia({
-  audio: false,
+  audio: true,
   video: true
 })
   .then(gotStream)
@@ -151,7 +151,8 @@ function start(targetId) {
   if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
-    peerConnections[targetId].addTrack(localStream.getTracks()[0], localStream);
+    peerConnections[targetId].addTrack(localStream.getVideoTracks()[0], localStream);
+    peerConnections[targetId].addTrack(localStream.getAudioTracks()[0], localStream);
     isStarted[targetId] = true;
     handleCreateOffer(targetId);
   }
@@ -164,19 +165,21 @@ function handleCreatePeerConnection(targetId) {
     peerConnections[targetId].ontrack = event => {
       console.log('Remote stream added.');
       remoteStreams.push(event.streams[0]);
-      var newVideoElement = document.createElement('video');
-      newVideoElement.id = targetId;
-      newVideoElement.className = "remoteVideo";
-      newVideoElement.autoplay = true;
-      // newVideoElement.controls = true;
-      var newVideoContainer = document.createElement('div');
-      newVideoContainer.className = "remote-video-container";
-      newVideoContainer.id = targetId + "-container";
-      document.getElementById('videos').appendChild(newVideoContainer);
-      newVideoContainer.appendChild(newVideoElement);
-      remoteVideos.push(newVideoElement);
-      remoteVideos[remoteVideos.length - 1].srcObject = remoteStreams[remoteStreams.length - 1];
-      addControls(newVideoElement, newVideoContainer);
+      var newVideoElement = document.getElementById(targetId);
+      if (newVideoElement == null) {
+        newVideoElement = document.createElement('video');
+        newVideoElement.id = targetId;
+        newVideoElement.className = "remoteVideo";
+        newVideoElement.autoplay = true;
+        var newVideoContainer = document.createElement('div');
+        newVideoContainer.className = "remote-video-container";
+        newVideoContainer.id = targetId + "-container";
+        document.getElementById('videos').appendChild(newVideoContainer);
+        newVideoContainer.appendChild(newVideoElement);
+        remoteVideos.push(newVideoElement);
+        addControls(newVideoElement, newVideoContainer);
+      }
+      remoteVideos[remoteVideos.indexOf(newVideoElement)].srcObject = remoteStreams[remoteStreams.length - 1];
     };
     console.log('Created RTCPeerConnnection');
   } catch (e) {
@@ -264,16 +267,21 @@ function handleRequestTurn(turnURL) {
 
 function handleRemoteHangup(peerId) {
   console.log('Hanging up peerConnection ' + peerId);
-  remoteVideos.splice(remoteVideos.indexOf(document.getElementById(peerId)), 1)[0].remove();
-  document.getElementById(peerId + "-container").remove();
-  peerConnections[peerId].close();
-  peerConnections[peerId] = null;
-  delete peerConnections[peerId];
-  isStarted[peerId] = false;
+  try {
+    remoteVideos.splice(remoteVideos.indexOf(document.getElementById(peerId)), 1)[0].remove();
+    document.getElementById(peerId + "-container").remove();
+    peerConnections[peerId].close();
+    peerConnections[peerId] = null;
+    delete peerConnections[peerId];
+    isStarted[peerId] = false;
+  } catch (e) {
+    console.log("RemoteHangup error: " + e.message);
+  }
 }
 
 function hangup() {
   console.log(socket.id + " hanging up.");
+  sendMessage("bye");
   isInitiator = false;
   stop();
 }
@@ -285,23 +293,18 @@ function stop() {
     }
     isStarted[index] = false;
   }
-  for (var  index in isStarted) {
+  for (var index in isStarted) {
     peerConnections[index].close();
     peerConnections[index] = null;
   }
-  // peerConnections.foreach(close());
   peerConnections = new Array();
   isStarted = new Array();
   peerConnections = new Array();
   remoteStreams = new Array();
   remoteVideos = new Array();
-  document.getElementsByClassName("remoteVideo").foreach(remove());
-  document.getElementsByClassName("remote-video-container").foreach(remove());
 }
 
 window.onbeforeunload = () => {
   sendMessage("bye");
-  hangup();
-  return "Hanging Up";
 };
 //#endregion

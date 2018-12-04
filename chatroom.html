@@ -41,13 +41,19 @@
 	<div class="content">
 				<div id="videos" class="video-container">
 					<div class="local-video-column">
-						<video id="localVideo" autoplay muted></video>
+						<div id="localVideoContainer">
+							<video id="localVideo" autoplay muted></video>
+						</div>
+						<button class="btn client-controls" id="mic-mute-button"><i class="fas fa-microphone"></i></button>
+						<button class="btn client-controls" id="video-pause-button"><i class="fas fa-video"></i></button>
+						<button class="btn" id="hangup-button">Hang Up</button>
 					</div>
 				</div>
 				<script src="/socket.io/socket.io.js"></script>
 				<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 				<script src="js/videocontrols.js"></script>
 				<script src="js/main.js"></script>
+				<script src="js/clientcontrols.js"></script>
 		<footer>
 			<div class="left-footer">
 				<p class="lead">&#169; Nicholas Mason</p>

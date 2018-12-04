@@ -493,12 +493,19 @@ form {
 	bottom: 15px;
 	z-index: 1;
 }
+.client-controls {
+	width: 30px;
+}
 /*
 	--~~== End Interactive Elements ==~~--
 */
 video {
 	width: 428px;
 	height:auto;	
+}
+#localVideoContainer {
+	width:100%;
+	height: 200px;
 }
 #localVideo {
 	width: 240px;

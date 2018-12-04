@@ -5,6 +5,8 @@ var nodeStatic = require('node-static');
 var http = require('http');
 var socketIO = require('socket.io');
 
+var maxRoomSize = 10;
+
 var fileServer = new (nodeStatic.Server)();
 var app = http.createServer((req, res) => {
     res.setHeader('Cache-Control', 'private, no-cache, no-store, must-revalidate');
@@ -15,6 +17,7 @@ var app = http.createServer((req, res) => {
 
 var io = socketIO.listen(app);
 io.sockets.on('connection', socket => {
+
     // convenience function to log server messages on the client
     function log() {
         var array = ['Message from server:'];
@@ -22,23 +25,22 @@ io.sockets.on('connection', socket => {
         socket.emit('log', array);
     }
 
-    //relay for client messages
+    // relay for client messages
     socket.on('message', (message, senderId, targetId, room) => {
-        log('Client ' + senderId + ' said to client ' + targetId, message);
-        //sends to all clients, limit to room in future TODO
+        log('Client ' + senderId + ' from room ' + room + ' said to client ' + targetId, message);
         socket.to(room).emit('message', message, senderId, targetId);
     });
 
     socket.on('create or join', room => {
         log('Received request to create or join room ' + room);
         var clientsInRoom = io.sockets.adapter.rooms[room];
-        var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0; //if there are clients in room, return the number, else 0
+        var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0; // if there are clients in room, return the number, else 0
         log('Room ' + room + ' now has ' + numClients + ' client(s)');
         if (numClients === 0) {
             socket.join(room);
             log('Client ID ' + socket.id + ' created room ' + room);
             socket.emit('created', room, socket.id);
-        } else if (numClients > 0 && numClients < 4) {//limit 4 clients to a room TODO increase this
+        } else if (numClients > 0 && numClients < maxRoomSize) {
             log('Client ID ' + socket.id + ' joined room ' + room);
             io.sockets.in(room).emit('join', room);
             socket.join(room);
