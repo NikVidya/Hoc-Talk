@@ -18,7 +18,7 @@ function addControls(videoElement, videoContainer) {
     volumeSlider.type = "range";
     volumeSlider.className = "volume-bar";
     volumeSlider.min = "0";
-    volumeSlider.max = "1";
+    volumeSlider.max = "2";
     volumeSlider.step = "0.1";
     volumeSlider.value = "1";
     volumeSlider.addEventListener("change", () => {

@@ -5,7 +5,6 @@
 var socket = io.connect();
 
 var isChannelReady = false;
-var isInitiator = false;
 var turnReady;
 
 var pcConfig = {
@@ -118,8 +117,8 @@ socket.on('message', (message, senderId, targetId) => {
       console.log("this client starting with client " + senderId);
       start(senderId);
     } else if (message.type === 'offer') {
-      console.log(">>>>>>> received offer, params ", isInitiator, isStarted[senderId]);
-      if (!isInitiator && !isStarted[senderId]) {
+      console.log(">>>>>>> received offer, params ", isStarted[senderId]);
+      if (!isStarted[senderId]) {
         start(senderId);
       }
       peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
@@ -282,7 +281,6 @@ function handleRemoteHangup(peerId) {
 function hangup() {
   console.log(socket.id + " hanging up.");
   sendMessage("bye");
-  isInitiator = false;
   stop();
 }
 
@@ -293,7 +291,7 @@ function stop() {
     }
     isStarted[index] = false;
   }
-  for (var index in isStarted) {
+  for (var index in peerConnections) {
     peerConnections[index].close();
     peerConnections[index] = null;
   }
