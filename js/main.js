@@ -61,6 +61,7 @@ function gotStream(stream) {
   localStream = stream;
   localVideo.srcObject = stream;
   sendMessage('got user media');
+  activateClientControls();
 }
 
 console.log('Getting user media with constraints', constraints);
@@ -77,7 +78,6 @@ if (location.hostname !== 'localhost') {
 
 socket.on('created', room => {
   console.log('Created room ' + room + ', ' + socket.id + ' is initiator');
-  isInitiator = true;
 });
 
 socket.on('full', room => {
@@ -102,7 +102,7 @@ socket.on('log', array => {
 
 //#region Messages
 
-// This client sends a message, attaching its ID, sending to targetId
+// This client sends a message, attaching its ID, sending to targetId (relayed via signalling server)
 function sendMessage(message, targetId = "all", room = window.room) {
   console.log('Client ' + socket.id + ' to ' + targetId + ' - sending message: ', message);
   socket.emit('message', message, socket.id, targetId, room);
@@ -148,7 +148,7 @@ function start(targetId) {
   console.log('>>>>>>> start() ', isStarted[targetId], localStream, isChannelReady, targetId);
   //if the call isn't started from this client, we have a local stream, and we have requested the server to join the room
   if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) {
-    console.log('>>>>>> creating peer connection with client ' + targetId);
+    console.log('>>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
     peerConnections[targetId].addTrack(localStream.getVideoTracks()[0], localStream);
     peerConnections[targetId].addTrack(localStream.getAudioTracks()[0], localStream);
@@ -180,9 +180,12 @@ function handleCreatePeerConnection(targetId) {
       }
       remoteVideos[remoteVideos.indexOf(newVideoElement)].srcObject = remoteStreams[remoteStreams.length - 1];
     };
-    console.log('Created RTCPeerConnnection');
+    peerConnections.onnegotiationneeded = () => {
+      handleCreateOffer(targetId);
+    };
+    console.log('Created RTCPeerConnnection ' + targetId);
   } catch (e) {
-    console.log('Failed to create PeerConnection, exception: ' + e.message);
+    console.log('Failed to create PeerConnection with client ' + targetId + ', exception: ' + e.message);
     alert('Cannot create RTCPeerConnection object.');
     return;
   }
