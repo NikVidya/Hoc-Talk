@@ -27,8 +27,8 @@ function addControls(videoElement, videoContainer) {
 
     //mute button
     var muteBtnIcons = {
-        unmuted: '<i class="fas fa-volume-up"></i>',
-        muted: '<i class="fas fa-volume-off"></i>'
+        unmuted: '<i class="fas fa-volume-up" style="color:white;"></i>',
+        muted: '<i class="fas fa-volume-off" style="color:red;"></i>'
     }
     var muteButton = document.createElement('button');
     muteButton.className = "btn mute-btn";

@@ -64,7 +64,7 @@ navigator.mediaDevices.getUserMedia({
       .catch(e => {
         console.log(e.message);
         navigator.mediaDevices.getUserMedia({
-          audio:false,
+          audio: false,
           video: true
         })
           .then(gotStream)
@@ -200,7 +200,7 @@ function handleCreatePeerConnection(targetId) {
       }
       remoteVideos[remoteVideos.indexOf(newVideoElement)].srcObject = remoteStreams[remoteStreams.length - 1];
     };
-    peerConnections.onnegotiationneeded = () => {
+    peerConnections[targetId].onnegotiationneeded = () => {
       handleCreateOffer(targetId);
     };
     console.log('Created RTCPeerConnnection ' + targetId);
@@ -253,7 +253,6 @@ function handleCreateOfferError(event) {
 }
 
 function onCreateSessionDescriptionError(error) {
-  1
   trace('Failed to create session description: ' + error.toString());
 }
 
@@ -314,9 +313,12 @@ function stop() {
     }
     isStarted[index] = false;
   }
-  for (var index in peerConnections) {
-    peerConnections[index].close();
-    peerConnections[index] = null;
+  for (var id in peerConnections) {
+    if (!peerConnections.hasOwnProperty(id)) {
+      continue;
+    }
+    peerConnections[id].close();
+    peerConnections[id] = null;
   }
   peerConnections = new Array();
   isStarted = new Array();

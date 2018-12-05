@@ -11,7 +11,6 @@ var micMuteButton = document.getElementById("mic-mute-button");
 var videoPauseButton = document.getElementById("video-pause-button");
 var hangupButton = document.getElementById("hangup-button");
 function activateClientControls() {
-
     //mute user mic
     if (localStream.getAudioTracks()[0] != null) {
         micMuteButton.innerHTML = muteIcons.unmuted;
