@@ -54,7 +54,15 @@ navigator.mediaDevices.getUserMedia({
   video: true
 })
   .then(gotStream)
-  .catch(e => alert('getUserMedia() error: ' + e.name));
+  .catch(navigator.mediaDevices.getUserMedia({
+    audio: true
+  })
+    .then(gotStream)
+    .catch(navigator.mediaDevices.getUserMedia({
+      video: true
+    })
+      .then(gotStream)
+      .catch(e => alert('getUserMedia() error: ' + e.name))));
 
 function gotStream(stream) {
   console.log('Adding local stream.');
@@ -150,8 +158,12 @@ function start(targetId) {
   if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) {
     console.log('>>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
-    peerConnections[targetId].addTrack(localStream.getVideoTracks()[0], localStream);
-    peerConnections[targetId].addTrack(localStream.getAudioTracks()[0], localStream);
+    try {
+      peerConnections[targetId].addTrack(localStream.getVideoTracks()[0], localStream);
+    } catch (e) { console.log(e.message) }
+    try {
+      peerConnections[targetId].addTrack(localStream.getAudioTracks()[0], localStream);
+    } catch (e) { console.log(e.message) }
     isStarted[targetId] = true;
     handleCreateOffer(targetId);
   }

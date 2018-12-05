@@ -1,37 +1,42 @@
 'use strict';
+var muteIcons = {
+    unmuted: '<i class="fas fa-microphone" style="color:white;"></i>',
+    muted: '<i class="fas fa-microphone-slash" style="color:red;"></i>'
+}
+var pauseIcons = {
+    unpaused: '<i class="fas fa-video" style="color:white;"></i>',
+    paused: '<i class="fas fa-video-slash" style="color:red;"></i>'
+}
+var micMuteButton = document.getElementById("mic-mute-button");
+var videoPauseButton = document.getElementById("video-pause-button");
+var hangupButton = document.getElementById("hangup-button");
 function activateClientControls() {
-    var muteIcons = {
-        unmuted: '<i class="fas fa-microphone" style="color:white;"></i>',
-        muted: '<i class="fas fa-microphone-slash" style="color:red;"></i>'
-    }
-    var pauseIcons = {
-        unpaused: '<i class="fas fa-video" style="color:white;"></i>',
-        paused: '<i class="fas fa-video-slash" style="color:red;"></i>'
-    }
-    var micMuteButton = document.getElementById("mic-mute-button");
-    micMuteButton.innerHTML = muteIcons.unmuted;
-    var videoPauseButton = document.getElementById("video-pause-button");
-    videoPauseButton.innerHTML = pauseIcons.unpaused;
-    var hangupButton = document.getElementById("hangup-button");
-    hangupButton.style.color = "white";
 
     //mute user mic
-    micMuteButton.addEventListener("click", () => {
-        localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
-        micMuteButton.innerHTML = (micMuteButton.innerHTML == muteIcons.unmuted ? muteIcons.muted : muteIcons.unmuted);
-    });
+    if (localStream.getAudioTracks()[0] != null) {
+        micMuteButton.innerHTML = muteIcons.unmuted;
+        micMuteButton.addEventListener("click", () => {
+            localStream.getAudioTracks()[0].enabled = !localStream.getAudioTracks()[0].enabled;
+            micMuteButton.innerHTML = (micMuteButton.innerHTML == muteIcons.unmuted ? muteIcons.muted : muteIcons.unmuted);
+        });
+    }
 
     //disable local video
-    videoPauseButton.addEventListener("click", () => {
-        localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-        videoPauseButton.innerHTML = (videoPauseButton.innerHTML == pauseIcons.unpaused ? pauseIcons.paused : pauseIcons.unpaused);
-    });
+    if (localStream.getVideoTracks()[0] != null) {
+        videoPauseButton.innerHTML = pauseIcons.unpaused;
+        videoPauseButton.addEventListener("click", () => {
+            localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+            videoPauseButton.innerHTML = (videoPauseButton.innerHTML == pauseIcons.unpaused ? pauseIcons.paused : pauseIcons.unpaused);
+        });
+    }
 
     //hangup, go back to main page
+    hangupButton.style.color = "white";
     hangupButton.addEventListener("click", () => {
         hangup();
         window.location = "index.html";
     });
+}
 
     //hotswap media devices WIP -- need update for getSenders()
     // var chooseCameraButton = document.getElementById("choose-camera-button");
@@ -74,4 +79,3 @@ function activateClientControls() {
     //     }
     //     localVideo.srcObject = stream;
     // }
-}
