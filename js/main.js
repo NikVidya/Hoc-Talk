@@ -54,15 +54,23 @@ navigator.mediaDevices.getUserMedia({
   video: true
 })
   .then(gotStream)
-  .catch(navigator.mediaDevices.getUserMedia({
-    audio: true
-  })
-    .then(gotStream)
-    .catch(navigator.mediaDevices.getUserMedia({
-      video: true
+  .catch(e => {
+    console.log(e.message);
+    navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: false
     })
       .then(gotStream)
-      .catch(e => alert('getUserMedia() error: ' + e.name))));
+      .catch(e => {
+        console.log(e.message);
+        navigator.mediaDevices.getUserMedia({
+          audio:false,
+          video: true
+        })
+          .then(gotStream)
+          .catch(e => alert('getUserMedia() error: ' + e.name));
+      });
+  });
 
 function gotStream(stream) {
   console.log('Adding local stream.');
