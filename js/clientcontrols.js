@@ -10,8 +10,9 @@ var pauseIcons = {
 var micMuteButton = document.getElementById("mic-mute-button");
 var videoPauseButton = document.getElementById("video-pause-button");
 var hangupButton = document.getElementById("hangup-button");
+var chooseDeviceButton = document.getElementById("choose-device-button");
+
 function activateClientControls() {
-    //mute user mic
     if (localStream.getAudioTracks()[0] != null) {
         micMuteButton.innerHTML = muteIcons.unmuted;
         micMuteButton.addEventListener("click", () => {
@@ -20,7 +21,6 @@ function activateClientControls() {
         });
     }
 
-    //disable local video
     if (localStream.getVideoTracks()[0] != null) {
         videoPauseButton.innerHTML = pauseIcons.unpaused;
         videoPauseButton.addEventListener("click", () => {
@@ -28,6 +28,11 @@ function activateClientControls() {
             videoPauseButton.innerHTML = (videoPauseButton.innerHTML == pauseIcons.unpaused ? pauseIcons.paused : pauseIcons.unpaused);
         });
     }
+
+    chooseDeviceButton.style.color = "white";
+    chooseDeviceButton.addEventListener("click", () => {
+        getMedia(gotNewStream);
+    });
 
     //hangup, go back to main page
     hangupButton.style.color = "white";
@@ -37,44 +42,14 @@ function activateClientControls() {
     });
 }
 
-    //hotswap media devices WIP -- need update for getSenders()
-    // var chooseCameraButton = document.getElementById("choose-camera-button");
-    // chooseCameraButton.addEventListener("click", () => {
-    //     navigator.mediaDevices.getUserMedia({
-    //         video: true
-    //     })
-    //         .then(gotCameraDevice)
-    //         .catch(e => { alert('getUserMedia() error: ' + e.name); console.log(e.message); });
-    // });
-
-    // function gotCameraDevice(stream) {
-    //     for (var index in peerConnections) {
-    //         var sender = peerConnections.getSenders()[0];
-    //         peerConnections[index].removeTrack(sender); //not guaranteed to be the video sender
-    //     }
-    //     localStream = stream;
-    //     for (var index in peerConnections) {
-    //         peerConnections[index].addTrack(localStream.getVideoTracks()[0], localStream);
-    //     }
-    //     localVideo.srcObject = stream;
-    // }
-
-    // var chooseMicButton = document.getElementById("choose-camera-button");
-    // chooseMicButton.addEventListener("click", () => {
-    //     navigator.mediaDevices.getUserMedia({
-    //         audio: true
-    //     })
-    //         .then(gotMicDevice)
-    //         .catch(e => { alert('getUserMedia() error: ' + e.name); console.log(e.message); });
-    // });
-    // function gotMicDevice(stream) {
-    //     for (var index in peerConnections) {
-    //         var sender = peerConnections.getSenders()[1];
-    //         peerConnections[index].removeTrack(sender); //not guaranteed to be the audio sender
-    //     }
-    //     localStream = stream;
-    //     for (var index in peerConnections) {
-    //         peerConnections[index].addTrack(localStream.getAudioTracks()[0], localStream);
-    //     }
-    //     localVideo.srcObject = stream;
-    // }
+function gotNewStream(stream) {
+    localStream = stream;
+    for (var index in peerConnections) {
+        if (!peerConnections.hasOwnProperty(index)) {
+            continue;
+        }
+        peerConnections[index].getSenders().forEach(sender => peerConnections[index].removeTrack(sender));
+        localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
+    }
+    localVideo.srcObject = stream;
+}

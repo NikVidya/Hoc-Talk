@@ -13,13 +13,6 @@ var pcConfig = {
   }]
 };
 
-// Set up audio and video regardless of what devices are present.
-var sdpConstraints = {
-  offerToReceiveAudio: true,
-  offerToReceiveVideo: true
-};
-
-
 var localStream;
 var localVideo = document.querySelector('#localVideo');
 
@@ -28,16 +21,11 @@ var peerConnections = new Array(); //peerconnections collected via associative a
 var remoteStreams = new Array();
 var remoteVideos = new Array();
 
-var constraints = {
-  audio: true,
-  video: true
-}; //constraints for remote videos only
-
 //#endregion
 
 //#region Main
 
-//enter room to join via URL or prompt
+//room is location hash (#asdf will be "asdf")
 window.room = window.location.hash.substring(1);
 if (!room) {
   window.room = window.location.hash = prompt("Enter room name:");
@@ -45,42 +33,43 @@ if (!room) {
 
 if (room !== '') {
   socket.emit('create or join', room);
-  console.log('Attempted to create or join room', room);
 }
 
-//get local mediastream once we are in a room
-navigator.mediaDevices.getUserMedia({
-  audio: true,
-  video: true
-})
-  .then(gotStream)
-  .catch(e => {
-    console.log(e.message);
-    navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: false
-    })
-      .then(gotStream)
-      .catch(e => {
-        console.log(e.message);
-        navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: true
-        })
-          .then(gotStream)
-          .catch(e => alert('getUserMedia() error: ' + e.name));
-      });
-  });
+//check for a/v, if that fails check for a, if that fails check for v
+function getMedia(onGotStream) {
+  navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: true
+  })
+    .then(onGotStream)
+    .catch(e => {
+      console.log(e.message);
+      navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: false
+      })
+        .then(onGotStream)
+        .catch(e => {
+          console.log(e.message);
+          navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: true
+          })
+            .then(onGotStream)
+            .catch(e => alert('getUserMedia() error: ' + e.name));
+        });
+    });
+}
 
 function gotStream(stream) {
-  console.log('Adding local stream.');
   localStream = stream;
   localVideo.srcObject = stream;
   sendMessage('got user media');
   activateClientControls();
 }
 
-console.log('Getting user media with constraints', constraints);
+getMedia(gotStream);
+
 
 if (location.hostname !== 'localhost') {
   handleRequestTurn(
@@ -90,7 +79,7 @@ if (location.hostname !== 'localhost') {
 
 //#endregion
 
-//#region Socket Callbacks
+//#region Socket Events
 
 socket.on('created', room => {
   console.log('Created room ' + room + ', ' + socket.id + ' is initiator');
@@ -120,58 +109,54 @@ socket.on('log', array => {
 
 // This client sends a message, attaching its ID, sending to targetId (relayed via signalling server)
 function sendMessage(message, targetId = "all", room = window.room) {
-  console.log('Client ' + socket.id + ' to ' + targetId + ' - sending message: ', message);
+  console.log('This client: ' + socket.id + ' sent to ' + targetId + ' message: ', message);
   socket.emit('message', message, socket.id, targetId, room);
 }
 
 // This client receives a message
-socket.on('message', (message, senderId, targetId) => {
+socket.on('message', async (message, senderId, targetId) => {
   if (targetId === socket.id || targetId === "all") {
-    console.log('Client received message:', message);
-    console.log('message from: ' + senderId);
+    console.log('This client received message: ', message);
     if (message === 'got user media') {
-      console.log("this client starting with client " + senderId);
-      start(senderId);
+      await start(senderId);
+
     } else if (message.type === 'offer') {
-      console.log(">>>>>>> received offer, params ", isStarted[senderId]);
-      if (!isStarted[senderId]) {
-        start(senderId);
-      }
-      peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
-      handleCreateAnswer(senderId);
+      await start(senderId);
+      await peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+      await handleCreateAnswer(senderId);
+
     } else if (message.type === 'answer' && isStarted[senderId]) {
-      peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+      await peerConnections[senderId].setRemoteDescription(new RTCSessionDescription(message));
+
     } else if (message.type === 'candidate' && isStarted[senderId]) {
       var candidate = new RTCIceCandidate({
         sdpMLineIndex: message.label,
         candidate: message.candidate
       });
-      peerConnections[senderId].addIceCandidate(candidate);
+      await peerConnections[senderId].addIceCandidate(candidate);
+
     } else if (message === 'bye' && isStarted[senderId]) {
-      handleRemoteHangup(senderId);
+      await handleRemoteHangup(senderId);
+
+    } else {
+      console.log("Could not respond to the message");
     }
   } else {
     console.log("message wasn't for me!");
   }
 });
 
-
 //#endregion
 
 //#region Handlers/Callbacks
 
 function start(targetId) {
-  console.log('>>>>>>> start() ', isStarted[targetId], localStream, isChannelReady, targetId);
   //if the call isn't started from this client, we have a local stream, and we have requested the server to join the room
   if (!isStarted[targetId] && typeof localStream !== 'undefined' && isChannelReady) {
-    console.log('>>>>>>> creating peer connection with client ' + targetId);
     handleCreatePeerConnection(targetId);
     try {
-      peerConnections[targetId].addTrack(localStream.getVideoTracks()[0], localStream);
-    } catch (e) { console.log(e.message) }
-    try {
-      peerConnections[targetId].addTrack(localStream.getAudioTracks()[0], localStream);
-    } catch (e) { console.log(e.message) }
+      localStream.getTracks().forEach(track => peerConnections[targetId].addTrack(track, localStream));
+    } catch (e) { console.log(e.message); }
     isStarted[targetId] = true;
     handleCreateOffer(targetId);
   }
@@ -180,9 +165,19 @@ function start(targetId) {
 function handleCreatePeerConnection(targetId) {
   try {
     peerConnections[targetId] = new RTCPeerConnection(null);
-    peerConnections[targetId].onicecandidate = handleIceCandidate;
+    peerConnections[targetId].onicecandidate = event => {
+      if (event.candidate) {
+        sendMessage({
+          type: 'candidate',
+          label: event.candidate.sdpMLineIndex,
+          id: event.candidate.sdpMid,
+          candidate: event.candidate.candidate
+        }, targetId);
+      } else {
+        console.log('End of candidates.');
+      }
+    }
     peerConnections[targetId].ontrack = event => {
-      console.log('Remote stream added.');
       remoteStreams.push(event.streams[0]);
       var newVideoElement = document.getElementById(targetId);
       if (newVideoElement == null) {
@@ -203,7 +198,6 @@ function handleCreatePeerConnection(targetId) {
     peerConnections[targetId].onnegotiationneeded = () => {
       handleCreateOffer(targetId);
     };
-    console.log('Created RTCPeerConnnection ' + targetId);
   } catch (e) {
     console.log('Failed to create PeerConnection with client ' + targetId + ', exception: ' + e.message);
     alert('Cannot create RTCPeerConnection object.');
@@ -211,34 +205,17 @@ function handleCreatePeerConnection(targetId) {
   }
 }
 
-function handleIceCandidate(event) {
-  console.log('icecandidate event: ', event);
-  if (event.candidate) {
-    sendMessage({
-      type: 'candidate',
-      label: event.candidate.sdpMLineIndex,
-      id: event.candidate.sdpMid,
-      candidate: event.candidate.candidate
-    });
-  } else {
-    console.log('End of candidates.');
-  }
-}
-
 function handleCreateOffer(targetId) {
-  console.log('Sending offer to peer');
   peerConnections[targetId].createOffer().then(offer => {
-    console.log("Setting local description " + offer);
     return peerConnections[targetId].setLocalDescription(offer);
   })
     .then(() => {
       sendMessage(peerConnections[targetId].localDescription, targetId);
     })
-    .catch(handleCreateOfferError);
+    .catch(onCreateOfferError);
 }
 
 function handleCreateAnswer(targetId) {
-  console.log('Sending answer to peer.');
   peerConnections[targetId].createAnswer().then(answer => {
     return peerConnections[targetId].setLocalDescription(answer);
   })
@@ -248,7 +225,7 @@ function handleCreateAnswer(targetId) {
     .catch(onCreateSessionDescriptionError);
 }
 
-function handleCreateOfferError(event) {
+function onCreateOfferError(event) {
   console.log('createOffer() error: ', event);
 }
 
@@ -257,7 +234,6 @@ function onCreateSessionDescriptionError(error) {
 }
 
 function handleRequestTurn(turnURL) {
-  console.log("Requesting TURN server");
   var turnExists = false;
   for (var i in pcConfig.iceServers) {
     if (pcConfig.iceServers[i].urls.substr(0, 5) === 'turn:') {
@@ -287,7 +263,6 @@ function handleRequestTurn(turnURL) {
 }
 
 function handleRemoteHangup(peerId) {
-  console.log('Hanging up peerConnection ' + peerId);
   try {
     remoteVideos.splice(remoteVideos.indexOf(document.getElementById(peerId)), 1)[0].remove();
     document.getElementById(peerId + "-container").remove();
@@ -301,7 +276,6 @@ function handleRemoteHangup(peerId) {
 }
 
 function hangup() {
-  console.log(socket.id + " hanging up.");
   sendMessage("bye");
   stop();
 }
