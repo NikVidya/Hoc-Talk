@@ -1,11 +1,11 @@
 'use strict';
 var muteIcons = {
-    unmuted: '<i class="fas fa-microphone" style="color:white;"></i>',
-    muted: '<i class="fas fa-microphone-slash" style="color:red;"></i>'
+    unmuted: '<i class="fas fa-microphone" style="color:white;"></i><div class="tooltip"><span>Mute Microphone</span></div>',
+    muted: '<i class="fas fa-microphone-slash" style="color:red;"></i><div class="tooltip"><span>Unmute Microphone</span></div>'
 }
 var pauseIcons = {
-    unpaused: '<i class="fas fa-video" style="color:white;"></i>',
-    paused: '<i class="fas fa-video-slash" style="color:red;"></i>'
+    unpaused: '<i class="fas fa-video" style="color:white;"></i><div class="tooltip"><span>Pause Video Feed</span></div>',
+    paused: '<i class="fas fa-video-slash" style="color:red;"></i><div class="tooltip"><span>Unpause Video Feed</span></div>'
 }
 var micMuteButton = document.getElementById("mic-mute-button");
 var videoPauseButton = document.getElementById("video-pause-button");

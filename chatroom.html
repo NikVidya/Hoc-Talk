@@ -45,12 +45,23 @@
 							<video id="localVideo" autoplay muted></video>
 						</div>
 						<div id="client-control-div">
-							<button class="btn client-controls" id="mic-mute-button"><i class="fas fa-microphone-slash" style="color:#888;"></i></button>
-							<button class="btn client-controls" id="video-pause-button"><i class="fas fa-video-slash" style="color:#888;"></i></button>
+							<button class="btn" id="mic-mute-button"><i class="fas fa-microphone-slash" style="color:#888;"></i></button>
+							<button class="btn" id="video-pause-button"><i class="fas fa-video-slash" style="color:#888;"></i></button>
 							<br>
-							<button class="btn" id="choose-device-button" style="color:#888;">Choose Devices</button>
+							<button class="btn" id="choose-device-button" style="color:#888;">
+								<div class="tooltip">
+									<span>If you have saved device permissions,<br>
+										 this won't appear to do anything</span>
+								</div>
+								Choose Devices
+							</button>
 							<br>
-							<button class="btn" id="hangup-button" style="color:#888;">Hang Up</button>
+							<button class="btn" id="hangup-button" style="color:#888;">
+								<div class="tooltip">
+									<span>Hang up and go to main page</span>
+								</div>
+								Hang Up
+							</button>
 						</div>
 					</div>
 				</div>

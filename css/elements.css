@@ -493,8 +493,28 @@ form {
 	bottom: 15px;
 	z-index: 1;
 }
-.client-controls {
+
+#video-pause-button, #mic-mute-button {
 	width: 30px;
+}
+
+.tooltip {
+	text-align: left;
+	color: #fff;
+	background-color: #127a81;
+	border: 1px solid aqua;
+	position: absolute;
+	visibility: hidden;
+	opacity: 0;
+	transition: opacity 300ms;
+	z-index: 1;
+	padding: 5px;
+	top:480px;
+    left: 6%;
+}
+.btn:hover .tooltip {
+	visibility: visible;
+	opacity: 1;
 }
 /*
 	--~~== End Interactive Elements ==~~--
