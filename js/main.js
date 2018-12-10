@@ -108,14 +108,14 @@ socket.on('log', array => {
 //#region Messages
 
 // This client sends a message, attaching its ID, sending to targetId (relayed via signalling server)
-function sendMessage(message, targetId = "all", room = window.room) {
+function sendMessage(message, targetId = 'all', room = window.room) {
   console.log('This client: ' + socket.id + ' sent to ' + targetId + ' message: ', message);
   socket.emit('message', message, socket.id, targetId, room);
 }
 
 // This client receives a message
 socket.on('message', async (message, senderId, targetId) => {
-  if (targetId === socket.id || targetId === "all") {
+  if (targetId === socket.id || targetId === 'all') {
     console.log('This client received message: ', message);
     if (message === 'got user media') {
       await start(senderId);

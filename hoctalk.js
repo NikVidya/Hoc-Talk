@@ -28,7 +28,12 @@ io.sockets.on('connection', socket => {
     // relay for client messages
     socket.on('message', (message, senderId, targetId, room) => {
         log('Client ' + senderId + ' from room ' + room + ' said to client ' + targetId, message);
-        socket.to(room).emit('message', message, senderId, targetId);
+        if (targetId === 'all') {
+            socket.to(room).emit('message', message, senderId, targetId);
+        }
+        else {
+            io.to(targetId).emit('message', message, senderId, targetId);
+        }
     });
 
     socket.on('create or join', room => {
