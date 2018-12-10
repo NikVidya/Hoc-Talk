@@ -35,7 +35,7 @@ if (room !== '') {
   socket.emit('create or join', room);
 }
 
-//check for a/v, if that fails check for a, if that fails check for v
+//check for a/v, if that fails check for just a, if that fails check for just v
 function getMedia(onGotStream) {
   navigator.mediaDevices.getUserMedia({
     audio: true,
@@ -65,6 +65,10 @@ function gotStream(stream) {
   localStream = stream;
   localVideo.srcObject = stream;
   sendMessage('got user media');
+  sendMessage({
+    type: 'readystate',
+    readystate: true
+  })
   activateClientControls();
 }
 
@@ -116,6 +120,10 @@ function sendMessage(message, targetId = "all", room = window.room) {
 // This client receives a message
 socket.on('message', async (message, senderId, targetId) => {
   if (targetId === socket.id || targetId === "all") {
+    sendMessage({
+      type: 'readystate',
+      readystate: false
+    })
     console.log('This client received message: ', message);
     if (message === 'got user media') {
       await start(senderId);
@@ -141,6 +149,10 @@ socket.on('message', async (message, senderId, targetId) => {
     } else {
       console.log("Could not respond to the message");
     }
+    sendMessage({
+      type: 'readystate',
+      readystate: true
+    })
   } else {
     console.log("message wasn't for me!");
   }

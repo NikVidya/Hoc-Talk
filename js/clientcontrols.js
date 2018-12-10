@@ -52,4 +52,6 @@ function gotNewStream(stream) {
         localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
     }
     localVideo.srcObject = stream;
+    micMuteButton.innerHTML = muteIcons.unmuted;
+    videoPauseButton.innerHTML = pauseIcons.unpaused;
 }

@@ -15,6 +15,36 @@ var app = http.createServer((req, res) => {
     fileServer.serve(req, res);
 }).listen(8080);
 
+function allTrue(obj) {
+    for (var o in obj) {
+        if (!obj[o]) {
+            return false;
+        }
+    }
+    return true;
+}
+var readyStates = new Array();
+var mq = new Array();
+function MessageQueue() {
+    this.elements = [];
+}
+MessageQueue.prototype.enqueue = function (m, s, t) {
+    this.elements.push({
+        message: m,
+        sender: s,
+        target: t
+    });
+};
+MessageQueue.prototype.dequeue = function () {
+    return this.elements.shift();
+};
+MessageQueue.prototype.isEmpty = function () {
+    return this.elements.length == 0;
+};
+MessageQueue.prototype.peek = function () {
+    return !this.isEmpty() ? this.elements[0] : undefined;
+};
+
 var io = socketIO.listen(app);
 io.sockets.on('connection', socket => {
 
@@ -27,8 +57,16 @@ io.sockets.on('connection', socket => {
 
     // relay for client messages
     socket.on('message', (message, senderId, targetId, room) => {
-        log('Client ' + senderId + ' from room ' + room + ' said to client ' + targetId, message);
-        socket.to(room).emit('message', message, senderId, targetId);
+        if (message.type === 'readystate') {
+            readyStates[room][senderId] = message.readystate;
+        } else {
+            mq[room].enqueue(message, senderId, targetId);
+            if (allTrue(readyStates[room]) || message.type === 'candidate') {
+                log('Client ' + senderId + ' from room ' + room + ' said to client ' + targetId, message);
+                socket.to(room).emit('message', mq[room].peek().message, mq[room].peek().sender, mq[room].peek().target);
+                mq[room].dequeue();
+            }
+        }
     });
 
     socket.on('create or join', room => {
@@ -40,6 +78,8 @@ io.sockets.on('connection', socket => {
             socket.join(room);
             log('Client ID ' + socket.id + ' created room ' + room);
             socket.emit('created', room, socket.id);
+            readyStates[room] = new Array();
+            mq[room] = new MessageQueue();
         } else if (numClients > 0 && numClients < maxRoomSize) {
             log('Client ID ' + socket.id + ' joined room ' + room);
             io.sockets.in(room).emit('join', room);
