@@ -62,9 +62,7 @@ function activateClientControls() {
     }
 
     chooseDeviceButton.style.color = "white";
-    chooseDeviceButton.addEventListener("click", () => {
-        getMedia(gotNewStream);
-    });
+    chooseDeviceButton.addEventListener("mouseup", getMedia);
 
     //hangup, go back to main page
     hangupButton.style.color = "white";
@@ -86,16 +84,4 @@ function activateClientControls() {
             }
         }
     });
-}
-
-function gotNewStream(stream) {
-    localStream = stream;
-    for (var index in peerConnections) {
-        if (!peerConnections.hasOwnProperty(index)) {
-            continue;
-        }
-        peerConnections[index].getSenders().forEach(sender => peerConnections[index].removeTrack(sender));
-        localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
-    }
-    localVideo.srcObject = stream;
 }

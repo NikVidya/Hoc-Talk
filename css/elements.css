@@ -509,8 +509,8 @@ form {
 	transition: opacity 300ms;
 	z-index: 1;
 	padding: 5px;
-	top:490px;
-    left: 6%;
+	top: 350px;
+    left: 12%;
 }
 .btn:hover .tooltip, .checkbox-container:hover .tooltip {
 	visibility: visible;

@@ -21,6 +21,9 @@ var peerConnections = new Array(); //peerconnections collected via associative a
 var remoteStreams = new Array();
 var remoteVideos = new Array();
 
+const audioSelect = document.getElementById('audioDeviceSelect');
+const videoSelect = document.getElementById('videoDeviceSelect');
+const selectors = [audioSelect, videoSelect];
 //#endregion
 
 //#region Main
@@ -35,40 +38,84 @@ if (room !== '') {
   socket.emit('create or join', room);
 }
 
-//check for a/v, if that fails check for a, if that fails check for v
-function getMedia(onGotStream) {
-  navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: true
-  })
-    .then(onGotStream)
-    .catch(e => {
-      console.log(e.message);
-      navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-      })
-        .then(onGotStream)
-        .catch(e => {
-          console.log(e.message);
-          navigator.mediaDevices.getUserMedia({
-            audio: false,
-            video: true
-          })
-            .then(onGotStream)
-            .catch(e => alert('getUserMedia() error: ' + e.name));
-        });
+var getmediacallcount = 0;
+function getMedia() {
+  getmediacallcount++;
+  console.log("GETMEDIA CALLED " + getmediacallcount);
+  if (localStream) {
+    localStream.getTracks().forEach(track => {
+      track.stop();
     });
+  }
+
+  var audioSource = audioSelect.value;
+  var videoSource = videoSelect.value;
+  var constraints = {
+    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+    video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+  };
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(gotStream)
+    .then(gotDevices)
+    .catch(e => alert('getUserMedia() error:' + e.name));
+}
+
+// populate device selectors
+function gotDevices(devices) {
+  const values = selectors.map(select => select.value);
+  selectors.forEach(select => {
+    while (select.firstChild) {
+      select.removeChild(select.firstChild);
+    }
+  });
+  for (let i = 0; i < devices.length; i++) {
+    var deviceInfo = devices[i];
+    var option = document.createElement('option');
+    option.value = deviceInfo.deviceId;
+    switch (deviceInfo.kind) {
+      case 'audioinput':
+        option.text = deviceInfo.label || 'Microphone ' + (audioSelect.length + 1);
+        audioSelect.appendChild(option);
+        break;
+      case 'videoinput':
+        option.text = deviceInfo.label || 'Camera  ' + (videoSelect.length + 1);
+        videoSelect.appendChild(option)
+        break;
+    }
+  }
+  // update selector list values
+  selectors.forEach((select, selectorIndex) => {
+    if (Array.prototype.slice.call(select.childNodes).some(n => n.value === values[selectorIndex])) {
+      select.value = values[selectorIndex];
+    }
+  });
 }
 
 function gotStream(stream) {
   localStream = stream;
+  if (peerConnections.length == 0) {
+    // first time entering room
+    sendMessage('got user media');
+    activateClientControls();
+  }
+  // getting new devices
+  for (var index in peerConnections) {
+    if (!peerConnections.hasOwnProperty(index)) {
+      continue;
+    }
+    peerConnections[index].getSenders().forEach(sender => peerConnections[index].removeTrack(sender));
+    localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
+  }
   localVideo.srcObject = stream;
-  sendMessage('got user media');
-  activateClientControls();
+
+  return navigator.mediaDevices.enumerateDevices();
 }
 
-getMedia(gotStream);
+navigator.mediaDevices.enumerateDevices()
+  .then(gotDevices)
+  .catch(e => alert('enumerateDevices() error:' + e.name));
+
+getMedia(); // also called on button press
 
 
 if (location.hostname !== 'localhost') {
@@ -163,6 +210,9 @@ function start(targetId) {
 }
 
 function handleCreatePeerConnection(targetId) {
+  if (targetId == socket.id) {
+    console.log("CREATING PEER CONNECTION WITH SELF. PROBABLY BAD");
+  }
   try {
     peerConnections[targetId] = new RTCPeerConnection(null);
     peerConnections[targetId].onicecandidate = event => {
