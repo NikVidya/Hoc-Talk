@@ -17,9 +17,11 @@ var localStream;
 var localVideo = document.querySelector('#localVideo');
 
 var isStarted = new Array();
-var peerConnections = new Array(); //peerconnections collected via associative array (socket.id as key, RTCPeerConnection as value)
+var peerConnections = {};
 var remoteStreams = new Array();
 var remoteVideos = new Array();
+
+var emptyRoom = true;
 
 const audioSelect = document.getElementById('audioDeviceSelect');
 const videoSelect = document.getElementById('videoDeviceSelect');
@@ -38,10 +40,7 @@ if (room !== '') {
   socket.emit('create or join', room);
 }
 
-var getmediacallcount = 0;
 function getMedia() {
-  getmediacallcount++;
-  console.log("GETMEDIA CALLED " + getmediacallcount);
   if (localStream) {
     localStream.getTracks().forEach(track => {
       track.stop();
@@ -62,12 +61,14 @@ function getMedia() {
 
 // populate device selectors
 function gotDevices(devices) {
+  // wipe the old selector values
   const values = selectors.map(select => select.value);
   selectors.forEach(select => {
     while (select.firstChild) {
       select.removeChild(select.firstChild);
     }
   });
+  // add new labels to selector lists
   for (let i = 0; i < devices.length; i++) {
     var deviceInfo = devices[i];
     var option = document.createElement('option');
@@ -93,21 +94,25 @@ function gotDevices(devices) {
 
 function gotStream(stream) {
   localStream = stream;
-  if (peerConnections.length == 0) {
+  console.log("PEER CONNECTION LENGTH: " + objectLength(peerConnections));
+  if (objectLength(peerConnections) == 0) {
     // first time entering room
     sendMessage('got user media');
     activateClientControls();
-  }
-  // getting new devices
-  for (var index in peerConnections) {
-    if (!peerConnections.hasOwnProperty(index)) {
-      continue;
+  } else {
+    // getting new devices
+    for (var index in peerConnections) {
+      if (!peerConnections.hasOwnProperty(index)) {
+        continue;
+      }
+      peerConnections[index].getSenders().forEach(sender => peerConnections[index].removeTrack(sender));
+      localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
     }
-    peerConnections[index].getSenders().forEach(sender => peerConnections[index].removeTrack(sender));
-    localStream.getTracks().forEach(track => peerConnections[index].addTrack(track, localStream));
+    if (localStream.getAudioTracks()[0] != null) {
+      micMuted = false;
+    }
   }
   localVideo.srcObject = stream;
-
   return navigator.mediaDevices.enumerateDevices();
 }
 
@@ -342,13 +347,22 @@ function stop() {
       continue;
     }
     peerConnections[id].close();
-    peerConnections[id] = null;
+    delete peerConnections[id];
   }
-  peerConnections = new Array();
   isStarted = new Array();
-  peerConnections = new Array();
+  peerConnections = {};
   remoteStreams = new Array();
   remoteVideos = new Array();
+}
+
+function objectLength(obj) {
+  var len = 0;
+  for (var p in obj) {
+    if (obj.hasOwnProperty(p)) {
+      len++;
+    }
+  }
+  return len;
 }
 
 window.onbeforeunload = () => {

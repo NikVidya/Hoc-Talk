@@ -21,67 +21,80 @@ var pttEnabled = false;
 var chooseDeviceButton = document.getElementById("choose-device-button");
 var hangupButton = document.getElementById("hangup-button");
 
+var controlsActivated = false;
+
 function activateClientControls() {
-    if (localStream.getAudioTracks()[0] != null) {
-        micMuteButton.innerHTML = muteIcons.unmuted;
-        micMuted = false;
-        micMuteButton.addEventListener("click", () => {
-            if (!micMuted) { //mute mic, regardless of ptt enabled
+    if (!controlsActivated) {
+        controlsActivated = true;
+        if (localStream.getAudioTracks()[0] != null) {
+            micMuteButton.innerHTML = muteIcons.unmuted;
+            micMuted = false;
+            micMuteButton.addEventListener("click", () => {
+                if (!micMuted) { //mute mic, regardless of ptt enabled
+                    localStream.getAudioTracks()[0].enabled = false;
+                    micMuted = true;
+                    micMuteButton.innerHTML = muteIcons.muted;
+                } else { //unmute mic, unless ptt is enabled in which case just let ptt handle muting
+                    if (!pttEnabled) {
+                        localStream.getAudioTracks()[0].enabled = true;
+                    }
+                    micMuted = false;
+                    micMuteButton.innerHTML = muteIcons.unmuted;
+                }
+            });
+
+            pttButton.addEventListener("mousedown", () => {
+                if (pttEnabled && !micMuted) {
+                    localStream.getAudioTracks()[0].enabled = true;
+                    pttButton.innerHTML = pttIcons.active;
+                }
+            });
+            pttButton.addEventListener("mouseup", () => {
+                if (pttEnabled) {
+                    localStream.getAudioTracks()[0].enabled = false;
+                    pttButton.innerHTML = pttIcons.inactive;
+                }
+            });
+        }
+
+        if (localStream.getVideoTracks()[0] != null) {
+            videoPauseButton.innerHTML = pauseIcons.unpaused;
+            videoPauseButton.addEventListener("click", () => {
+                localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
+                videoPauseButton.innerHTML = (videoPauseButton.innerHTML == pauseIcons.unpaused ? pauseIcons.paused : pauseIcons.unpaused);
+            });
+        }
+
+        chooseDeviceButton.style.color = "white";
+        chooseDeviceButton.addEventListener("mouseup", getMedia);
+
+        //hangup, go back to main page
+        hangupButton.style.color = "white";
+        hangupButton.addEventListener("click", () => {
+            hangup();
+            window.location = "index.html";
+        });
+
+        pttCheck.addEventListener("change", () => {
+            if (pttCheck.checked) {
+                pttButton.innerHTML = pttIcons.inactive;
+                pttEnabled = true;
                 localStream.getAudioTracks()[0].enabled = false;
-                micMuted = true;
-                micMuteButton.innerHTML = muteIcons.muted;
-            } else { //unmute mic, unless ptt is enabled in which case just let ptt handle muting
-                if (!pttEnabled) {
+            } else {
+                pttButton.innerHTML = pttIcons.disabled;
+                pttEnabled = false;
+                if (!micMuted) {
                     localStream.getAudioTracks()[0].enabled = true;
                 }
-                micMuted = false;
-                micMuteButton.innerHTML = muteIcons.unmuted;
             }
         });
-
-        pttButton.addEventListener("mousedown", () => {
-            if (pttEnabled && !micMuted) {
-                localStream.getAudioTracks()[0].enabled = true;
-                pttButton.innerHTML = pttIcons.active;
-            }
-        });
-        pttButton.addEventListener("mouseup", () => {
-            if (pttEnabled) {
-                localStream.getAudioTracks()[0].enabled = false;
-                pttButton.innerHTML = pttIcons.inactive;
-            }
-        });
-    }
-
-    if (localStream.getVideoTracks()[0] != null) {
-        videoPauseButton.innerHTML = pauseIcons.unpaused;
-        videoPauseButton.addEventListener("click", () => {
-            localStream.getVideoTracks()[0].enabled = !localStream.getVideoTracks()[0].enabled;
-            videoPauseButton.innerHTML = (videoPauseButton.innerHTML == pauseIcons.unpaused ? pauseIcons.paused : pauseIcons.unpaused);
-        });
-    }
-
-    chooseDeviceButton.style.color = "white";
-    chooseDeviceButton.addEventListener("mouseup", getMedia);
-
-    //hangup, go back to main page
-    hangupButton.style.color = "white";
-    hangupButton.addEventListener("click", () => {
-        hangup();
-        window.location = "index.html";
-    });
-
-    pttCheck.addEventListener("change", () => {
-        if (pttCheck.checked) {
-            pttButton.innerHTML = pttIcons.inactive;
-            pttEnabled = true;
-            localStream.getAudioTracks()[0].enabled = false;
-        } else {
-            pttButton.innerHTML = pttIcons.disabled;
-            pttEnabled = false;
-            if (!micMuted) {
-                localStream.getAudioTracks()[0].enabled = true;
-            }
+    } else {
+        if (localStream.getAudioTracks()[0] != null) {
+            micMuteButton.innerHTML = muteIcons.unmuted;
+            micMuted = false;
         }
-    });
+        if (localStream.getVideoTracks()[0] != null) {
+            videoPauseButton.innerHTML = pauseIcons.unpaused;
+        }
+    }
 }
