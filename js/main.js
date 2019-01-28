@@ -46,7 +46,6 @@ function getMedia() {
       track.stop();
     });
   }
-
   var audioSource = audioSelect.value;
   var videoSource = videoSelect.value;
   var constraints = {
@@ -55,12 +54,25 @@ function getMedia() {
   };
   navigator.mediaDevices.getUserMedia(constraints)
     .then(gotStream)
-    .then(gotDevices)
-    .catch(e => alert('getUserMedia() error:' + e.name));
+    .then(gotDeviceList)
+    .catch(() => navigator.mediaDevices.getUserMedia({ audio: constraints.audio })
+      .then(gotStream)
+      .then(gotDeviceList)
+      .catch(() => navigator.mediaDevices.getUserMedia({ video: constraints.video })
+        .then(gotStream)
+        .then(gotDeviceList)
+        .catch(() => {
+          // observer user, make a text chat option for those without mic/camera TODO
+          console.log("Beginning without video/audio");
+          sendMessage('got user media');
+        }
+        )
+      )
+    );
 }
 
 // populate device selectors
-function gotDevices(devices) {
+function gotDeviceList(devices) {
   // wipe the old selector values
   const values = selectors.map(select => select.value);
   selectors.forEach(select => {
@@ -94,7 +106,6 @@ function gotDevices(devices) {
 
 function gotStream(stream) {
   localStream = stream;
-  console.log("PEER CONNECTION LENGTH: " + objectLength(peerConnections));
   if (objectLength(peerConnections) == 0) {
     // first time entering room
     sendMessage('got user media');
@@ -117,17 +128,10 @@ function gotStream(stream) {
 }
 
 navigator.mediaDevices.enumerateDevices()
-  .then(gotDevices)
-  .catch(e => alert('enumerateDevices() error:' + e.name));
+  .then(gotDeviceList)
+  .catch(e => alert('Error detecting devices:' + e.name));
 
-getMedia(); // also called on button press
-
-
-if (location.hostname !== 'localhost') {
-  handleRequestTurn(
-    'https://computeengineondemand.appspot.com/turn?username=41784574&key=4080218913'
-  );
-}
+getMedia(); // also called on choose devices button press
 
 //#endregion
 
@@ -215,9 +219,6 @@ function start(targetId) {
 }
 
 function handleCreatePeerConnection(targetId) {
-  if (targetId == socket.id) {
-    console.log("CREATING PEER CONNECTION WITH SELF. PROBABLY BAD");
-  }
   try {
     peerConnections[targetId] = new RTCPeerConnection(null);
     peerConnections[targetId].onicecandidate = event => {
@@ -255,7 +256,7 @@ function handleCreatePeerConnection(targetId) {
     };
   } catch (e) {
     console.log('Failed to create PeerConnection with client ' + targetId + ', exception: ' + e.message);
-    alert('Cannot create RTCPeerConnection object.');
+    alert('Cannot create peer connection. Hang up and try again.');
     return;
   }
 }

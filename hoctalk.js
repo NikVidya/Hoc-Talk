@@ -13,7 +13,7 @@ var app = http.createServer((req, res) => {
     res.setHeader('Expires', '-1');
     res.setHeader('Pragma', 'no-cache');
     fileServer.serve(req, res);
-}).listen(8080);
+}).listen(8090);
 
 var io = socketIO.listen(app);
 io.sockets.on('connection', socket => {
