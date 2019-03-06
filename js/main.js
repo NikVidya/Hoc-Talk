@@ -232,7 +232,7 @@ function handleCreatePeerConnection(targetId) {
       } else {
         console.log('End of candidates.');
       }
-    }
+    };
     peerConnections[targetId].ontrack = event => {
       remoteStreams.push(event.streams[0]);
       var newVideoElement = document.getElementById(targetId);

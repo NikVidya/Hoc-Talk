@@ -295,7 +295,19 @@ body::after {
 	color:#fff;
 	border-top: solid 1px #fff;
 }
-@media (max-width: 78rem) {
+@media  screen and 
+	(max-width: 68em),
+	(max-device-width: 640px),
+	(orientation: portrait) {
+	header {
+		padding-right: 5%;
+		padding-left: 5%;
+		margin-bottom: 5px;
+	}
+	footer {
+		padding-right: 5%;
+		padding-left: 5%;
+	}
 	.half-width-box{
 		width:100%;
 	}
@@ -315,6 +327,41 @@ body::after {
 	.content-column .box {
 		border-left: none;
 		border-right: none;
+	}
+	#localVideoContainer {
+		height: unset;
+		width: unset;
+		width: 30%;
+		margin:0;
+	}
+	#localVideo {
+		height: 180px;
+		width: unset;
+		border: 1px solid #aaa;
+		margin:0;
+	}
+	.local-video-column {
+		float:unset;
+		border-right: none;
+		border-bottom: solid black 1px;
+		/* position:fixed; */
+		/* min-height: 100px; */
+	}
+	video {
+		height: auto;
+		border:none;
+	}
+	.video-container {
+		text-align:center;
+	}
+	.remoteVideo {
+		width: 200px
+	}
+	.btn {
+		margin: 2px;
+	}
+	select{
+		margin: 2px;
 	}
 }
 .sample {
@@ -420,7 +467,7 @@ body::after {
 .btn {
 	border-radius: 2px;
 	padding: 7px;
-	margin:3px;
+	margin:6px;
 	color: #222;
 	background: #3cc;
 	text-decoration: none;
@@ -497,6 +544,10 @@ form {
 .btn:hover .tooltip, .checkbox-container:hover .tooltip {
 	visibility: visible;
 	opacity: 1;
+}
+
+select {
+	margin: 6px;
 }
 
 /*
